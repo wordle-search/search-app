@@ -31,7 +31,11 @@ class Answer:
             }
         }
     def to_dict(self):
-        return self.__dict__
+        return {"id": self.id, 
+                "solution": self.solution, 
+                "days_since_launch": self.days_since_launch, 
+                "editor": self.editor,
+                "print_date": self.print_date}
     def from_dict(self, data: Dict[str, Any]):
         self.id = data.get('id')
         self.solution = data.get('solution')
@@ -160,7 +164,7 @@ def build_answer_list(start_date: str, end_date: str) -> list:
     current_date = start_date
     while current_date >= end_date:
         print(f'build_answer_list():trying -> {current_date.year}-{current_date.month:02d}-{current_date.day:02d}')
-        answer = Answer(**get_answer_data(
+        answer = Answer().from_dict(**get_answer_data(
                 current_date.year, 
                 current_date.month, 
                 current_date.day))
@@ -225,11 +229,12 @@ def update_answer_list(answer_list: list=[], file_path: str=False) -> None:
         current_date -= timedelta(days=1)
     print(f'{len(dates_to_get_answer)}個の過去問が取得されていません')
     for item in dates_to_get_answer:
+        print(f'update_answer_list():trying -> {item}')
         current_date = date.fromisoformat(item)
         answers[item] = Answer().from_dict(data=get_answer_data(
                 current_date.year, 
                 current_date.month, 
-                current_date.day)).to_dict_date_key()
+                current_date.day)).to_dict()
         if not answers.get(item):
             continue
         logger.info(f'build_answer_list():got -> {answers[item]}')
@@ -237,16 +242,15 @@ def update_answer_list(answer_list: list=[], file_path: str=False) -> None:
         current_date -= timedelta(days=1)
     return transpose_answers_to_list(answers)
 
+def extract_solution_to_list(answers: List[Answer])->List[str]:
+    return [answer.solution for answer in answers]
+
 def extract_answers_to_dict(answers: List[Answer]) -> Dict[str, Dict[str, Any]]:
-    return {answer.print_date: answer.to_dict_date_key() for answer in answers}
+    return {answer.print_date: answer.to_dict() for answer in answers}
 
 def transpose_answers_to_list(_answers: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
-    answers = []
-    for key, values in _answers.items():
-        answers.extend(Answer().from_dict_date_key(values))
-    return answers
-
-
+    return [
+        item for item in _answers.values()]
 def main():
     if args.command == "create":
         answer_list = build_answer_list({})

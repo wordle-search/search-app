@@ -78,7 +78,7 @@ def get_defaults(selector: str = "values"):
         "command_help": (
             "create: 単語リストファイルを作成します\n"
             "download: ベースになる辞書ファイルをダウンロードします\n"
-            "pull: 回答ファイルを公式アーカイブから取得します"
+            "pull: 回答ファイルを公式アーカイブから取得します\n"
             "update: 回答ファイルを更新します"
         ),
         "values": {
@@ -87,7 +87,7 @@ def get_defaults(selector: str = "values"):
             "answers_file": "answers.json",
             "output_file": "words.json.gz",
             "start_date": (date.today() - timedelta(days=1)).isoformat(),
-            "end_date": "2026-05-30"
+            "end_date": "2021-06-19"
         },
         "help": {
             "dictionry": "ベースの辞書ファイル名",
@@ -155,7 +155,7 @@ def get_answer_data_from_file(file_path: str) -> dict:
 
 
 
-#指定した期間の回答データを取得
+#指定した期間の回答データを取得し、欠落を埋める
 def build_answer_list(start_date: str, end_date: str) -> list:
     print(f'build_answer_list():got start_date->{start_date} and end_date->{end_date}')
     answer_list = []
@@ -180,11 +180,11 @@ def load_dictionary()-> dict:
     local_dictionary_file = Path(args.dictionary_file)
     if local_dictionary_file.exists():
         with open(local_dictionary_file, 'r') as f:
-            data = json.load(f).keys()
+            data = json.load(f)
     else:
         print("辞書ファイルが見つかりません")
         data = get_dictionary_from_url()
-    return shrink_word_list(data)
+    return shrink_word_list(data.keys())
 
 def get_dictionary_from_url() -> dict:
     print(f"'english-words'から辞書を取得します: {dictionary_url}")
@@ -196,8 +196,15 @@ def get_dictionary_from_url() -> dict:
         print(f"辞書取得に失敗しました: {e}")
         return {}
 
+
+def load_answer_list(file_path: str) -> list:
+    if Path(file_path).exists():
+        with open(file_path, 'r') as f:
+            return [item.get('solution') for item in json.load(f)]
+    else:
+        return []
+
 def shrink_word_list(word_list: list) -> list:
-    word_list = word_list.keys()
     return [word for word in word_list if len(word) == 5]
 
 def save_answer_list(answer_list: list, file_path: str, encoding: str = 'utf-8', 
@@ -251,18 +258,19 @@ def extract_answers_to_dict(answers: List[Answer]) -> Dict[str, Dict[str, Any]]:
 def transpose_answers_to_list(_answers: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [
         item for item in _answers.values()]
+def remove_duplicates(word_list: list, answer_list: list) -> list:
+    return [word for word in word_list if word not in answer_list]
 def main():
     if args.command == "create":
-        answer_list = build_answer_list({})
-        print(f'{len(answer_list)} answers found')
         dictionary = load_dictionary()
+        answer_list = load_answer_list(file_path=args.answers_file)
+        print(f'{len(answer_list)} answers found')
         print(f'{len(dictionary)} words found')
-        for answer in answer_list:
-            if answer.solution not in dictionary:
-                dictionary[answer.solution] = answer.print_date
-        print(f'{len(dictionary)} words found')
-        save_word_list(dictionary, args.output_file, gzip=True)
+        word_list = remove_duplicates(dictionary, answer_list)
+        print(f'{len(word_list)} words in word list')
+        save_word_list(word_list, args.output_file, compress=True)
         print(f'{args.output_file} created')
+        return
     elif args.command == "download":
         dictionary_file = Path(args.dictionary_file)
         if dictionary_file.exists():

@@ -146,3 +146,6 @@ inventories/
 task.md
 .env
 .wrangler
+__pycache__/
+*.json
+*.gz

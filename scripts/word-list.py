@@ -10,7 +10,16 @@ from datetime import date, timedelta
 from pprint import pprint
 from typing import List, Dict, Any
 #
-dictionary_url = "https://raw.githubusercontent.com/dwyl/english-words/master/words_dictionary.json"
+def get_url(target: str) -> str:
+    if target == "base":
+        return "https://raw.githubusercontent.com/dwyl/english-words/master/words_dictionary.json"
+    elif target == "extra":
+        return [
+            
+        ]
+        # "https://raw.githubusercontent.com/dwyl/english-words/master/extra_dictionary.json"
+    else:
+        return ""
 
 # 過去問データ用のクラス
 class Answer:
@@ -74,17 +83,23 @@ def prepare_logger(args):
 
 def get_defaults(selector: str = "values"):
     data ={
-        "commands": ["create", "download", "pull", "update"],
+        "commands": ["create", "download", "update"],
+        "target": ["base", "answers", "extra"],
+        "target_help": (
+            "base:\t ベースになる辞書ファイルをダウンロードします\n"
+            "answers: 回答ファイルを公式アーカイブから取得します\n"
+            "extra:\t 追加辞書をダウンロードします"
+        ),
         "command_help": (
-            "create: 単語リストファイルを作成します\n"
-            "download: ベースになる辞書ファイルをダウンロードします\n"
-            "pull: 回答ファイルを公式アーカイブから取得します\n"
-            "update: 回答ファイルを更新します"
+            "create:\t 単語リストファイルを作成します\n"
+            "download:辞書ファイルまたは回答ファイルをダウンロードします\n"
+            "update:\t 回答ファイルを更新します"
         ),
         "values": {
             "dictionry": "words_dictionary.json",
             "log_file": f"{get_self_script_name()}.log",
             "answers_file": "answers.json",
+            "extra_file": "extra_words.json",
             "output_file": "words.json.gz",
             "start_date": (date.today() - timedelta(days=1)).isoformat(),
             "end_date": "2021-06-19"
@@ -93,6 +108,7 @@ def get_defaults(selector: str = "values"):
             "dictionry": "ベースの辞書ファイル名",
             "log_file": "ログファイル名",
             "answers_file": "過去問の追回答ファイル名",
+            "extra_file": "追加辞書ファイル名",
             "output_file": "出力ファイル名",
             "start_date": "過去問の取得開始日(YYYY-MM-DD) ※当日だとネタバレや取得失敗の可能性があるので、前日以前を指定してください",
             "end_date": "過去問の取得終了日(YYYY-MM-DD) ※2021-06-19以前のデータは取得できません"
@@ -101,6 +117,7 @@ def get_defaults(selector: str = "values"):
             "dictionry": "words_dictionary.json",
             "log_file": "create_dictionary.log",
             "answers_file": "answers.json",
+            "extra_file": "extra_words.json",
             "output_file": "words.json.gz",
             "start_date": "2026-05-30",
             "end_date": "2026-05-30"
@@ -115,8 +132,11 @@ def parse_args():
     parser = ArgumentParser(description=get_defaults("description")["app"], 
                             formatter_class=RawTextArgumentDefaultsHelpFormatter)
     parser.add_argument('command',choices=get_defaults("commands"),help=get_defaults("command_help"))
+    parser.add_argument("target",choices=get_defaults("target"),help=get_defaults("target_help"))
     parser.add_argument("-d", "--dictionary-file",
                         type=str, default=get_defaults()["dictionry"], help=get_defaults("help")["dictionry"])
+    parser.add_argument("-e", "--extra-file",
+                        type=str, default=get_defaults()["extra_file"], help=get_defaults("help")["extra_file"])
     parser.add_argument("-l", "--log-file",
                         type=str, default=get_defaults()["log_file"], help=get_defaults("help")["log_file"])
     parser.add_argument("-a", "--answers-file",
@@ -271,14 +291,14 @@ def main():
         save_word_list(word_list, args.output_file, compress=True)
         print(f'{args.output_file} created')
         return
-    elif args.command == "download":
+    elif args.command == "download" and args.target == "base":
         dictionary_file = Path(args.dictionary_file)
         if dictionary_file.exists():
             print(f'{args.dictionary_file} already exists')
             return
         save_word_list(shrink_word_list(get_dictionary_from_url()), dictionary_file)
         print(f'{args.dictionary_file} created')
-    elif args.command == "pull":
+    elif args.command == "download" and args.target == "answers":
         answer_list = build_answer_list(args.start_date, args.end_date)
         save_answer_list(answer_list, args.answers_file)
         print(f'{len(answer_list)} answers found')

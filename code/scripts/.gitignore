@@ -1,0 +1,7 @@
+**.log
+**.gz
+**.json
+
+answers*.json
+
+.python-version

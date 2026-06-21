@@ -46,6 +46,7 @@ class Answer:
                 "editor": self.editor,
                 "print_date": self.print_date}
     def from_dict(self, data: Dict[str, Any]):
+        print(f"data -> {data}")
         self.id = data.get('id')
         self.solution = data.get('solution')
         self.days_since_launch = data.get('days_since_launch')
@@ -135,7 +136,7 @@ def parse_args():
     parser.add_argument("target",choices=get_defaults("target"),help=get_defaults("target_help"))
     parser.add_argument("-d", "--dictionary-file",
                         type=str, default=get_defaults()["dictionry"], help=get_defaults("help")["dictionry"])
-    parser.add_argument("-e", "--extra-file",
+    parser.add_argument("-x", "--extra-file",
                         type=str, default=get_defaults()["extra_file"], help=get_defaults("help")["extra_file"])
     parser.add_argument("-l", "--log-file",
                         type=str, default=get_defaults()["log_file"], help=get_defaults("help")["log_file"])
@@ -160,6 +161,7 @@ def get_answer_data(year: int, month: int, day: int) -> dict:
         logger.error(f"error -> {e}")
         print(f"{year}/{month:02d}/{day:02d}分の過去問の取得に失敗しました -> {e}")
         return False
+    print(f"response -> {json.loads(response)}")
     return json.loads(response)
 
 def get_answer_data_from_file(file_path: str) -> dict:
@@ -184,14 +186,14 @@ def build_answer_list(start_date: str, end_date: str) -> list:
     current_date = start_date
     while current_date >= end_date:
         print(f'build_answer_list():trying -> {current_date.year}-{current_date.month:02d}-{current_date.day:02d}')
-        answer = Answer().from_dict(**get_answer_data(
+        answer = Answer().from_dict(data=get_answer_data(
                 current_date.year, 
                 current_date.month, 
                 current_date.day))
         if not answer:
             continue
         logger.info(f'build_answer_list():got -> {answer.to_dict()}')
-        answer_list.extend(answer)
+        answer_list.append(answer)
         sleep(0.1)
         current_date -= timedelta(days=1)
     return answer_list

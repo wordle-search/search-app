@@ -1,4 +1,4 @@
-const DEFAULT_ANSWERS_KEY = "answers.json";
+const DEFAULT_ANSWERS_KEY = "assets/answers.json";
 const DEFAULT_TIME_ZONE = "America/New_York";
 const LINE_BROADCAST_URL = "https://api.line.me/v2/bot/message/broadcast";
 const MANUAL_SCHEDULED_PATH = "/debug/scheduled";

@@ -6,6 +6,9 @@ export type AppCopy = {
   leadHref: string;
   leadSuffix: string;
   languageToggleLabel: string;
+  tabRegexSearch: string;
+  tabWordleSearch: string;
+  wordleClear: string;
   regexLabel: string;
   regexPlaceholder: string;
   searchOptionsLabel: string;
@@ -45,6 +48,9 @@ export const getI18n = (locale = 'en-US') => {
         leadSuffix:
           'を辞書として、正規表現に一致する５文字の英単語をインクリメンタルに検索します。',
         languageToggleLabel: '表示言語を切り替える',
+        tabRegexSearch: '正規表現検索',
+        tabWordleSearch: 'Wordle風検索',
+        wordleClear: 'クリア',
         regexLabel: '正規表現',
         regexPlaceholder: '例: ^a.*e$',
         searchOptionsLabel: '検索オプション',
@@ -82,6 +88,9 @@ export const getI18n = (locale = 'en-US') => {
         leadSuffix:
           'is used as the dictionary for incremental regular expression search for 5-letter English words to play Wordle.',
         languageToggleLabel: 'Switch display language',
+        tabRegexSearch: 'RegEx Search',
+        tabWordleSearch: 'Wordle-like Search',
+        wordleClear: 'Clear',
         regexLabel: 'Regular expression',
         regexPlaceholder: 'Example: ^a.*e$',
         searchOptionsLabel: 'Search options',

@@ -72,6 +72,125 @@ button {
   justify-content: space-between;
 }
 
+.hero-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 2rem;
+}
+
+.hero-tab {
+  padding: 0.65rem 1.1rem;
+  border: 1px solid rgb(148 163 184 / 18%);
+  border-radius: 999px;
+  background: rgb(148 163 184 / 12%);
+  color: #cbd5e1;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.hero-tab:hover {
+  border-color: rgb(56 189 248 / 40%);
+  color: #e2e8f0;
+}
+
+.hero-tab[aria-selected='true'] {
+  border-color: #38bdf8;
+  background: rgb(14 116 144 / 52%);
+  color: #bae6fd;
+}
+
+.hero-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgb(56 189 248 / 16%);
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
+
+.tab-panel {
+  margin-top: 1.5rem;
+}
+
+.wordle-panel {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.wordle-grid {
+  display: grid;
+  gap: 0.45rem;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  outline: none;
+}
+
+.wordle-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.wordle-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(2.75rem, 12vw, 3.75rem);
+  aspect-ratio: 1;
+  border: 2px solid rgb(148 163 184 / 32%);
+  border-radius: 6px;
+  background: rgb(15 23 42 / 72%);
+  color: #fff;
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: clamp(1.25rem, 4vw, 1.65rem);
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+.wordle-cell[data-state='collect'] {
+  border-color: #228b22;
+  background: #228b22;
+}
+
+.wordle-cell[data-state='present'] {
+  border-color: #ffd700;
+  background: #ffd700;
+}
+
+.wordle-cell[data-state='absent'] {
+  border-color: #6c6c6c;
+  background: #6c6c6c;
+}
+
+.wordle-clear {
+  justify-self: center;
+  padding: 0.7rem 1.4rem;
+  border: 1px solid rgb(56 189 248 / 22%);
+  border-radius: 999px;
+  background: rgb(8 47 73 / 72%);
+  color: #bae6fd;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.wordle-clear:hover {
+  border-color: #38bdf8;
+  background: rgb(14 116 144 / 52%);
+}
+
+.wordle-clear:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgb(56 189 248 / 16%);
+}
+
 .language-toggle {
   display: inline-flex;
   flex: none;

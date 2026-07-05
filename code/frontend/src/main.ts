@@ -1,19 +1,34 @@
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { getI18n } from './i18n';
 import './style.css';
-// DICTIONARY_URL は環境変数から取得
+
 type DictionaryPayload = Record<string, number> | string[];
+type SearchMode = 'regex' | 'wordle';
+type CellState = 'none' | 'collect' | 'present' | 'absent';
+
+type WordleCell = {
+  letter: string;
+  state: CellState;
+};
 
 const DEFAULT_PATTERN = '^.....$';
 const LANGUAGE_STORAGE_KEY = 'word-search-language';
 const RESULT_PAGE_SIZE = 100;
+const WORDLE_ROWS = 6;
+const WORDLE_COLS = 5;
+const MARKED_STATE_CYCLE: CellState[] = ['collect', 'present', 'absent'];
 
-const getDictionaryUrl = () => {
+const getDictionaryUrl = (): string => {
   const dictionaryUrl = import.meta.env.VITE_DICTIONARY_URL;
-  if (dictionaryUrl) {
-    return new URL(dictionaryUrl);
+  if (!dictionaryUrl) {
+    return 'base_dictionary.json';
   }
-  return 'base_dictionary.json';
+
+  try {
+    return new URL(dictionaryUrl).toString();
+  } catch {
+    return dictionaryUrl;
+  }
 };
 
 const getInitialLocale = () =>
@@ -27,7 +42,14 @@ if (!app) {
   throw new Error('App root element was not found.');
 }
 
-document.documentElement.lang = copy.lang;
+const wordleGridMarkup = Array.from({ length: WORDLE_ROWS }, (_, row) => {
+  const cells = Array.from(
+    { length: WORDLE_COLS },
+    (_, col) =>
+      `<button type="button" class="wordle-cell" data-row="${row}" data-col="${col}" data-state="none" aria-label="Row ${row + 1} column ${col + 1}"></button>`,
+  ).join('');
+  return `<div class="wordle-row">${cells}</div>`;
+}).join('');
 
 app.innerHTML = `
   <main class="shell" aria-live="polite">
@@ -59,40 +81,68 @@ app.innerHTML = `
         </label>
       </div>
 
-      <form class="search-form" id="search-form">
-        <label class="field">
-          <span id="regex-label">${copy.regexLabel}</span>
-          <textarea
-            id="pattern-input"
-            class="pattern-input"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="${copy.regexPlaceholder}"
-            rows="2"
-          ></textarea>
-        </label>
+      <div class="hero-tabs" role="tablist" aria-label="${copy.searchOptionsLabel}">
+        <button
+          class="hero-tab"
+          id="tab-regex"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="panel-regex"
+          data-tab="regex"
+        >${copy.tabRegexSearch}</button>
+        <button
+          class="hero-tab"
+          id="tab-wordle"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-wordle"
+          data-tab="wordle"
+        >${copy.tabWordleSearch}</button>
+      </div>
 
-        <div class="options" aria-label="${copy.searchOptionsLabel}">
-          <label>
-            <input id="ignore-case-input" type="checkbox" checked />
-            <span id="ignore-case-label">${copy.ignoreCase}</span>
+      <div class="tab-panel" id="panel-regex" role="tabpanel" aria-labelledby="tab-regex">
+        <form class="search-form" id="search-form">
+          <label class="field">
+            <span id="regex-label">${copy.regexLabel}</span>
+            <textarea
+              id="pattern-input"
+              class="pattern-input"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="${copy.regexPlaceholder}"
+              rows="2"
+            ></textarea>
           </label>
-          <label>
-            <input id="global-match-input" type="checkbox" checked />
-            <span id="global-match-label">${copy.matchAnywhere}</span>
-          </label>
-          <button class="option-button" id="copy-url-button" type="button">
-            <i class="fa-regular fa-copy" aria-hidden="true"></i>
-            <span id="copy-url-label">${copy.copyUrl}</span>
-          </button>
+
+          <div class="options" aria-label="${copy.searchOptionsLabel}">
+            <label>
+              <input id="ignore-case-input" type="checkbox" checked />
+              <span id="ignore-case-label">${copy.ignoreCase}</span>
+            </label>
+            <label>
+              <input id="global-match-input" type="checkbox" checked />
+              <span id="global-match-label">${copy.matchAnywhere}</span>
+            </label>
+            <button class="option-button" id="copy-url-button" type="button">
+              <i class="fa-regular fa-copy" aria-hidden="true"></i>
+              <span id="copy-url-label">${copy.copyUrl}</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="tips" id="regex-examples" aria-label="${copy.regexExamplesLabel}">
+          <button type="button" data-pattern="^a.*e$">^a.*e$</button>
+          <button type="button" data-pattern="^[a-z]{5}$">^[a-z]{5}$</button>
+          <button type="button" data-pattern="(ing|ed)$">(ing|ed)$</button>
+          <button type="button" data-pattern="^[^aeiou]+$">^[^aeiou]+$</button>
         </div>
-      </form>
+      </div>
 
-      <div class="tips" id="regex-examples" aria-label="${copy.regexExamplesLabel}">
-        <button type="button" data-pattern="^a.*e$">^a.*e$</button>
-        <button type="button" data-pattern="^[a-z]{5}$">^[a-z]{5}$</button>
-        <button type="button" data-pattern="(ing|ed)$">(ing|ed)$</button>
-        <button type="button" data-pattern="^[^aeiou]+$">^[^aeiou]+$</button>
+      <div class="tab-panel wordle-panel" id="panel-wordle" role="tabpanel" aria-labelledby="tab-wordle" hidden>
+        <div class="wordle-grid" id="wordle-grid" tabindex="0">${wordleGridMarkup}</div>
+        <button class="wordle-clear" id="wordle-clear" type="button">${copy.wordleClear}</button>
       </div>
     </section>
 
@@ -145,6 +195,16 @@ const globalMatchLabel =
 const regexExamples = document.querySelector<HTMLDivElement>('#regex-examples');
 const resultsEyebrow =
   document.querySelector<HTMLParagraphElement>('#results-eyebrow');
+const tabRegex = document.querySelector<HTMLButtonElement>('#tab-regex');
+const tabWordle = document.querySelector<HTMLButtonElement>('#tab-wordle');
+const panelRegex = document.querySelector<HTMLDivElement>('#panel-regex');
+const panelWordle = document.querySelector<HTMLDivElement>('#panel-wordle');
+const wordleGrid = document.querySelector<HTMLDivElement>('#wordle-grid');
+const wordleClearButton =
+  document.querySelector<HTMLButtonElement>('#wordle-clear');
+const wordleCellButtons = document.querySelectorAll<HTMLButtonElement>(
+  '.wordle-cell',
+);
 
 if (
   !patternInput ||
@@ -169,7 +229,13 @@ if (
   !ignoreCaseLabel ||
   !globalMatchLabel ||
   !regexExamples ||
-  !resultsEyebrow
+  !resultsEyebrow ||
+  !tabRegex ||
+  !tabWordle ||
+  !panelRegex ||
+  !panelWordle ||
+  !wordleGrid ||
+  !wordleClearButton
 ) {
   throw new Error('Required UI element was not found.');
 }
@@ -181,6 +247,47 @@ let words: string[] = [];
 let currentMatches: string[] = [];
 let renderedResultCount = 0;
 let pendingRender = 0;
+let activeSearchMode: SearchMode = 'regex';
+let activeInputIndex = 0;
+
+const wordleCells: WordleCell[] = Array.from(
+  { length: WORDLE_ROWS * WORDLE_COLS },
+  () => ({ letter: '', state: 'none' }),
+);
+
+const escapeRegex = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const getCellIndex = (row: number, col: number) => row * WORDLE_COLS + col;
+
+const getCellCoords = (index: number) => ({
+  row: Math.floor(index / WORDLE_COLS),
+  col: index % WORDLE_COLS,
+});
+
+const getWordleCellButton = (index: number) => {
+  const { row, col } = getCellCoords(index);
+  return wordleGrid.querySelector<HTMLButtonElement>(
+    `.wordle-cell[data-row="${row}"][data-col="${col}"]`,
+  );
+};
+
+const renderWordleCell = (index: number) => {
+  const cell = wordleCells[index];
+  const button = getWordleCellButton(index);
+  if (!button) {
+    return;
+  }
+
+  button.textContent = cell.letter;
+  button.dataset.state = cell.state;
+};
+
+const renderWordleGrid = () => {
+  for (let index = 0; index < wordleCells.length; index += 1) {
+    renderWordleCell(index);
+  }
+};
 
 const setStatus = (message: string, isError = false) => {
   status.textContent = message;
@@ -195,6 +302,9 @@ const updateLocalizedText = () => {
   leadLink.href = copy.leadHref;
   leadPrefix.textContent = copy.leadPrefix;
   leadSuffix.textContent = copy.leadSuffix;
+  tabRegex.textContent = copy.tabRegexSearch;
+  tabWordle.textContent = copy.tabWordleSearch;
+  wordleClearButton.textContent = copy.wordleClear;
   regexLabel.textContent = copy.regexLabel;
   patternInput.placeholder = copy.regexPlaceholder;
   options.setAttribute('aria-label', copy.searchOptionsLabel);
@@ -304,6 +414,75 @@ const buildRegex = () => {
   return new RegExp(source, ignoreCaseInput.checked ? 'i' : undefined);
 };
 
+const buildWordlePattern = () => {
+  const collectByCol: (string | null)[] = Array(WORDLE_COLS).fill(null);
+  const presentLetters = new Set<string>();
+  const absentLetters = new Set<string>();
+  const presentPositions: { col: number; letter: string }[] = [];
+  let hasConstraint = false;
+
+  for (let index = 0; index < wordleCells.length; index += 1) {
+    const cell = wordleCells[index];
+    if (!cell.letter || cell.state === 'none') {
+      continue;
+    }
+
+    hasConstraint = true;
+    const letter = cell.letter.toLowerCase();
+    const { col } = getCellCoords(index);
+
+    if (cell.state === 'collect') {
+      collectByCol[col] = letter;
+    } else if (cell.state === 'present') {
+      presentLetters.add(letter);
+      presentPositions.push({ col, letter });
+    } else if (cell.state === 'absent') {
+      absentLetters.add(letter);
+    }
+  }
+
+  if (!hasConstraint) {
+    return DEFAULT_PATTERN;
+  }
+
+  let pattern = '^';
+  const collectPart = collectByCol.map((letter) => letter ?? '.').join('');
+  pattern += `(?=^${collectPart}$)`;
+
+  for (const letter of presentLetters) {
+    if (!absentLetters.has(letter)) {
+      pattern += `(?=.*${escapeRegex(letter)})`;
+    }
+  }
+
+  if (absentLetters.size > 0) {
+    const absentClass = [...absentLetters].map(escapeRegex).join('');
+    pattern += `(?!.*[${absentClass}])`;
+  }
+
+  for (const { col, letter } of presentPositions) {
+    if (absentLetters.has(letter)) {
+      continue;
+    }
+
+    const prefix = '.'.repeat(col);
+    const suffix = '.'.repeat(WORDLE_COLS - col - 1);
+    pattern += `(?!^${prefix}${escapeRegex(letter)}${suffix}$)`;
+  }
+
+  pattern += '.{5}$';
+  return pattern;
+};
+
+const buildWordleRegex = () => {
+  const pattern = buildWordlePattern();
+  if (!pattern) {
+    return null;
+  }
+
+  return new RegExp(pattern, 'i');
+};
+
 const runSearch = () => {
   window.cancelAnimationFrame(pendingRender);
 
@@ -314,7 +493,8 @@ const runSearch = () => {
 
     let regex: RegExp | null;
     try {
-      regex = buildRegex();
+      regex =
+        activeSearchMode === 'wordle' ? buildWordleRegex() : buildRegex();
     } catch (error) {
       renderResults([]);
       resultsTitle.textContent = copy.invalidRegexTitle;
@@ -339,6 +519,107 @@ const runSearch = () => {
   });
 };
 
+const setSearchMode = (mode: SearchMode) => {
+  activeSearchMode = mode;
+  const isRegex = mode === 'regex';
+
+  tabRegex.setAttribute('aria-selected', String(isRegex));
+  tabWordle.setAttribute('aria-selected', String(!isRegex));
+  panelRegex.hidden = !isRegex;
+  panelWordle.hidden = isRegex;
+
+  if (isRegex) {
+    patternInput.focus();
+  } else {
+    wordleGrid.focus();
+  }
+
+  runSearch();
+};
+
+const getNextInputIndex = () => {
+  for (let index = 0; index < wordleCells.length; index += 1) {
+    if (!wordleCells[index].letter) {
+      return index;
+    }
+  }
+
+  return wordleCells.length;
+};
+
+const syncActiveInputIndex = () => {
+  activeInputIndex = getNextInputIndex();
+};
+
+const appendWordleLetter = (letter: string) => {
+  if (activeInputIndex >= wordleCells.length) {
+    return;
+  }
+
+  wordleCells[activeInputIndex].letter = letter;
+  renderWordleCell(activeInputIndex);
+  activeInputIndex += 1;
+  runSearch();
+};
+
+const removeLastWordleLetter = () => {
+  if (activeInputIndex === 0) {
+    return;
+  }
+
+  activeInputIndex -= 1;
+  wordleCells[activeInputIndex].letter = '';
+  wordleCells[activeInputIndex].state = 'none';
+  renderWordleCell(activeInputIndex);
+  runSearch();
+};
+
+const cycleWordleCellState = (index: number) => {
+  const cell = wordleCells[index];
+  if (!cell.letter) {
+    return;
+  }
+
+  if (cell.state === 'none') {
+    cell.state = 'collect';
+  } else {
+    const currentIndex = MARKED_STATE_CYCLE.indexOf(cell.state);
+    cell.state =
+      MARKED_STATE_CYCLE[(currentIndex + 1) % MARKED_STATE_CYCLE.length];
+  }
+
+  renderWordleCell(index);
+  runSearch();
+};
+
+const clearWordleGrid = () => {
+  for (let index = 0; index < wordleCells.length; index += 1) {
+    wordleCells[index].letter = '';
+    wordleCells[index].state = 'none';
+  }
+
+  activeInputIndex = 0;
+  renderWordleGrid();
+  runSearch();
+};
+
+const handleWordleKeydown = (event: KeyboardEvent) => {
+  if (activeSearchMode !== 'wordle') {
+    return;
+  }
+
+  if (event.key === 'Backspace') {
+    event.preventDefault();
+    removeLastWordleLetter();
+    return;
+  }
+
+  if (event.key.length === 1 && /^[a-zA-Z]$/.test(event.key)) {
+    event.preventDefault();
+    appendWordleLetter(event.key.toUpperCase());
+  }
+};
+
 const loadObserver = new IntersectionObserver(
   (entries) => {
     if (entries.some((entry) => entry.isIntersecting)) {
@@ -352,7 +633,7 @@ loadObserver.observe(loadSentinel);
 
 const loadDictionary = async () => {
   try {
-    let dictionaryUrl = getDictionaryUrl();
+    const dictionaryUrl = getDictionaryUrl();
     const response = await fetch(dictionaryUrl);
     if (!response.ok) {
       throw new Error(copy.dictionaryLoadFailedStatus(response.status));
@@ -402,4 +683,24 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('[data-pattern
   });
 }
 
+tabRegex.addEventListener('click', () => {
+  setSearchMode('regex');
+});
+
+tabWordle.addEventListener('click', () => {
+  setSearchMode('wordle');
+});
+
+wordleGrid.addEventListener('keydown', handleWordleKeydown);
+wordleClearButton.addEventListener('click', clearWordleGrid);
+
+for (const button of wordleCellButtons) {
+  button.addEventListener('click', () => {
+    const row = Number(button.dataset.row);
+    const col = Number(button.dataset.col);
+    cycleWordleCellState(getCellIndex(row, col));
+  });
+}
+
+syncActiveInputIndex();
 void loadDictionary();

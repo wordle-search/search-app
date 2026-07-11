@@ -122,12 +122,19 @@ button {
   gap: 1.25rem;
 }
 
+.wordle-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: center;
+}
+
 .wordle-grid {
   display: grid;
   gap: 0.45rem;
   width: fit-content;
   max-width: 100%;
-  margin: 0 auto;
   outline: none;
 }
 
@@ -155,6 +162,10 @@ button {
   user-select: none;
 }
 
+.wordle-cell[data-active='true'] {
+  border-color: rgb(186 230 253 / 78%);
+}
+
 .wordle-cell[data-state='collect'] {
   border-color: #228b22;
   background: #228b22;
@@ -168,6 +179,96 @@ button {
 .wordle-cell[data-state='absent'] {
   border-color: #6c6c6c;
   background: #6c6c6c;
+}
+
+.wordle-keyboard-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.wordle-keyboard-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border: 1px solid rgb(56 189 248 / 22%);
+  border-radius: 12px;
+  background: rgb(8 47 73 / 72%);
+  color: #bae6fd;
+  font-size: 1.35rem;
+}
+
+.wordle-keyboard-toggle:hover {
+  border-color: #38bdf8;
+  background: rgb(14 116 144 / 52%);
+}
+
+.wordle-keyboard-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgb(56 189 248 / 16%);
+}
+
+.wordle-keyboard[hidden] {
+  display: none;
+}
+
+.wordle-keyboard {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.wordle-keyboard-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.wordle-keyboard-row:nth-child(2) {
+  margin-left: 10px;
+}
+
+.wordle-keyboard-row:nth-child(3) {
+  margin-left: 20px;
+}
+
+.wordle-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(148 163 184 / 28%);
+  border-radius: 8px;
+  background: rgb(30 41 59 / 88%);
+  color: #f8fafc;
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+.wordle-key-letter {
+  width: 30px;
+  height: 60px;
+  font-size: 0.95rem;
+}
+
+.wordle-key-action {
+  width: 60px;
+  height: 60px;
+  font-size: 1.1rem;
+}
+
+.wordle-key:hover {
+  border-color: #38bdf8;
+  background: rgb(14 116 144 / 52%);
+}
+
+.wordle-key:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgb(56 189 248 / 16%);
 }
 
 .wordle-clear {

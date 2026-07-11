@@ -51,6 +51,41 @@ const wordleGridMarkup = Array.from({ length: WORDLE_ROWS }, (_, row) => {
   return `<div class="wordle-row">${cells}</div>`;
 }).join('');
 
+const renderKeyboardLetterKeys = (letters: string) =>
+  [...letters]
+    .map(
+      (letter) =>
+        `<button type="button" class="wordle-key wordle-key-letter" data-key="${letter}" aria-label="${letter}">${letter}</button>`,
+    )
+    .join('');
+
+const wordleKeyboardMarkup = `
+  <div class="wordle-keyboard-row">
+    ${renderKeyboardLetterKeys('QWERTYUIOP')}
+  </div>
+  <div class="wordle-keyboard-row">
+    ${renderKeyboardLetterKeys('ASDFGHJKL')}
+    <button
+      type="button"
+      class="wordle-key wordle-key-action"
+      data-action="backspace"
+      title="${copy.wordleBackspace}"
+      aria-label="${copy.wordleBackspace}"
+    ><i class="fa-solid fa-delete-left" aria-hidden="true"></i></button>
+  </div>
+  <div class="wordle-keyboard-row">
+    ${renderKeyboardLetterKeys('ZXCVBNM')}
+    <button
+      type="button"
+      class="wordle-key wordle-key-action"
+      data-action="clear-line"
+      title="${copy.wordleClearLine}"
+      aria-label="${copy.wordleClearLine}"
+      id="wordle-clear-line"
+    ><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+  </div>
+`;
+
 app.innerHTML = `
   <main class="shell" aria-live="polite">
     <section class="hero" aria-labelledby="page-title">
@@ -141,7 +176,21 @@ app.innerHTML = `
       </div>
 
       <div class="tab-panel wordle-panel" id="panel-wordle" role="tabpanel" aria-labelledby="tab-wordle" hidden>
-        <div class="wordle-grid" id="wordle-grid" tabindex="0">${wordleGridMarkup}</div>
+        <div class="wordle-board">
+          <div class="wordle-grid" id="wordle-grid" tabindex="0">${wordleGridMarkup}</div>
+          <div class="wordle-keyboard-side">
+            <button
+              class="wordle-keyboard-toggle"
+              id="wordle-keyboard-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="wordle-keyboard"
+              title="${copy.wordleExpandKeyboard}"
+              aria-label="${copy.wordleExpandKeyboard}"
+            ><i class="fa-regular fa-keyboard" aria-hidden="true"></i></button>
+            <div class="wordle-keyboard" id="wordle-keyboard" hidden>${wordleKeyboardMarkup}</div>
+          </div>
+        </div>
         <button class="wordle-clear" id="wordle-clear" type="button">${copy.wordleClear}</button>
       </div>
     </section>
@@ -202,6 +251,16 @@ const panelWordle = document.querySelector<HTMLDivElement>('#panel-wordle');
 const wordleGrid = document.querySelector<HTMLDivElement>('#wordle-grid');
 const wordleClearButton =
   document.querySelector<HTMLButtonElement>('#wordle-clear');
+const wordleKeyboardToggle = document.querySelector<HTMLButtonElement>(
+  '#wordle-keyboard-toggle',
+);
+const wordleKeyboard =
+  document.querySelector<HTMLDivElement>('#wordle-keyboard');
+const wordleClearLineButton = document.querySelector<HTMLButtonElement>(
+  '#wordle-clear-line',
+);
+const wordleKeyboardToggleIcon =
+  wordleKeyboardToggle?.querySelector<HTMLElement>('i');
 const wordleCellButtons = document.querySelectorAll<HTMLButtonElement>(
   '.wordle-cell',
 );
@@ -235,20 +294,29 @@ if (
   !panelRegex ||
   !panelWordle ||
   !wordleGrid ||
-  !wordleClearButton
+  !wordleClearButton ||
+  !wordleKeyboardToggle ||
+  !wordleKeyboard ||
+  !wordleClearLineButton ||
+  !wordleKeyboardToggleIcon
 ) {
   throw new Error('Required UI element was not found.');
 }
 
-const queryPattern = new URLSearchParams(window.location.search).get('q');
+const queryParams = new URLSearchParams(window.location.search);
+const queryPattern = queryParams.get('q');
 patternInput.value = queryPattern ?? DEFAULT_PATTERN;
+
+const resolveSearchMode = (value: string | null): SearchMode =>
+  value === 'wordle' ? 'wordle' : 'regex';
 
 let words: string[] = [];
 let currentMatches: string[] = [];
 let renderedResultCount = 0;
 let pendingRender = 0;
-let activeSearchMode: SearchMode = 'regex';
+let activeSearchMode: SearchMode = resolveSearchMode(queryParams.get('p'));
 let activeInputIndex = 0;
+let isWordleKeyboardExpanded = false;
 
 const wordleCells: WordleCell[] = Array.from(
   { length: WORDLE_ROWS * WORDLE_COLS },
@@ -289,6 +357,21 @@ const renderWordleGrid = () => {
   }
 };
 
+const syncActiveCellHighlight = () => {
+  for (const button of wordleCellButtons) {
+    const row = Number(button.dataset.row);
+    const col = Number(button.dataset.col);
+    const index = getCellIndex(row, col);
+    const isActive =
+      activeInputIndex < wordleCells.length && index === activeInputIndex;
+    if (isActive) {
+      button.dataset.active = 'true';
+    } else {
+      delete button.dataset.active;
+    }
+  }
+};
+
 const setStatus = (message: string, isError = false) => {
   status.textContent = message;
   status.classList.toggle('status-error', isError);
@@ -305,6 +388,24 @@ const updateLocalizedText = () => {
   tabRegex.textContent = copy.tabRegexSearch;
   tabWordle.textContent = copy.tabWordleSearch;
   wordleClearButton.textContent = copy.wordleClear;
+  const wordleBackspaceButton = wordleKeyboard.querySelector<HTMLButtonElement>(
+    '[data-action="backspace"]',
+  );
+  if (wordleBackspaceButton) {
+    wordleBackspaceButton.title = copy.wordleBackspace;
+    wordleBackspaceButton.setAttribute('aria-label', copy.wordleBackspace);
+  }
+  wordleClearLineButton.title = copy.wordleClearLine;
+  wordleClearLineButton.setAttribute('aria-label', copy.wordleClearLine);
+  wordleKeyboardToggle.title = isWordleKeyboardExpanded
+    ? copy.wordleCollapseKeyboard
+    : copy.wordleExpandKeyboard;
+  wordleKeyboardToggle.setAttribute(
+    'aria-label',
+    isWordleKeyboardExpanded
+      ? copy.wordleCollapseKeyboard
+      : copy.wordleExpandKeyboard,
+  );
   regexLabel.textContent = copy.regexLabel;
   patternInput.placeholder = copy.regexPlaceholder;
   options.setAttribute('aria-label', copy.searchOptionsLabel);
@@ -328,6 +429,8 @@ const buildShareUrl = () => {
   const url = new URL(window.location.href);
   const pattern = patternInput.value;
 
+  url.searchParams.set('p', activeSearchMode);
+
   if (pattern) {
     url.searchParams.set('q', pattern);
   } else {
@@ -335,6 +438,12 @@ const buildShareUrl = () => {
   }
 
   return url.toString();
+};
+
+const syncPanelQueryParam = (mode: SearchMode) => {
+  const url = new URL(window.location.href);
+  url.searchParams.set('p', mode);
+  window.history.replaceState(null, '', url);
 };
 
 const copyText = async (text: string) => {
@@ -519,7 +628,8 @@ const runSearch = () => {
   });
 };
 
-const setSearchMode = (mode: SearchMode) => {
+const setSearchMode = (mode: SearchMode, options: { syncUrl?: boolean } = {}) => {
+  const { syncUrl = true } = options;
   activeSearchMode = mode;
   const isRegex = mode === 'regex';
 
@@ -527,6 +637,10 @@ const setSearchMode = (mode: SearchMode) => {
   tabWordle.setAttribute('aria-selected', String(!isRegex));
   panelRegex.hidden = !isRegex;
   panelWordle.hidden = isRegex;
+
+  if (syncUrl) {
+    syncPanelQueryParam(mode);
+  }
 
   if (isRegex) {
     patternInput.focus();
@@ -549,6 +663,7 @@ const getNextInputIndex = () => {
 
 const syncActiveInputIndex = () => {
   activeInputIndex = getNextInputIndex();
+  syncActiveCellHighlight();
 };
 
 const appendWordleLetter = (letter: string) => {
@@ -559,6 +674,7 @@ const appendWordleLetter = (letter: string) => {
   wordleCells[activeInputIndex].letter = letter;
   renderWordleCell(activeInputIndex);
   activeInputIndex += 1;
+  syncActiveCellHighlight();
   runSearch();
 };
 
@@ -571,6 +687,7 @@ const removeLastWordleLetter = () => {
   wordleCells[activeInputIndex].letter = '';
   wordleCells[activeInputIndex].state = 'none';
   renderWordleCell(activeInputIndex);
+  syncActiveCellHighlight();
   runSearch();
 };
 
@@ -600,7 +717,59 @@ const clearWordleGrid = () => {
 
   activeInputIndex = 0;
   renderWordleGrid();
+  syncActiveCellHighlight();
   runSearch();
+};
+
+const getClearableRow = () => {
+  if (activeInputIndex === 0) {
+    return null;
+  }
+
+  if (activeInputIndex >= wordleCells.length) {
+    return WORDLE_ROWS - 1;
+  }
+
+  if (activeInputIndex % WORDLE_COLS === 0) {
+    return Math.floor(activeInputIndex / WORDLE_COLS) - 1;
+  }
+
+  return Math.floor(activeInputIndex / WORDLE_COLS);
+};
+
+const clearWordleLine = () => {
+  const row = getClearableRow();
+  if (row === null) {
+    return;
+  }
+
+  const startIndex = getCellIndex(row, 0);
+  for (let col = 0; col < WORDLE_COLS; col += 1) {
+    const index = startIndex + col;
+    wordleCells[index].letter = '';
+    wordleCells[index].state = 'none';
+    renderWordleCell(index);
+  }
+
+  activeInputIndex = startIndex;
+  syncActiveCellHighlight();
+  runSearch();
+};
+
+const setWordleKeyboardExpanded = (expanded: boolean) => {
+  isWordleKeyboardExpanded = expanded;
+  wordleKeyboard.hidden = !expanded;
+  wordleKeyboardToggle.setAttribute('aria-expanded', String(expanded));
+  wordleKeyboardToggle.title = expanded
+    ? copy.wordleCollapseKeyboard
+    : copy.wordleExpandKeyboard;
+  wordleKeyboardToggle.setAttribute(
+    'aria-label',
+    expanded ? copy.wordleCollapseKeyboard : copy.wordleExpandKeyboard,
+  );
+  wordleKeyboardToggleIcon.className = expanded
+    ? 'fa-solid fa-keyboard'
+    : 'fa-regular fa-keyboard';
 };
 
 const handleWordleKeydown = (event: KeyboardEvent) => {
@@ -693,6 +862,32 @@ tabWordle.addEventListener('click', () => {
 
 wordleGrid.addEventListener('keydown', handleWordleKeydown);
 wordleClearButton.addEventListener('click', clearWordleGrid);
+wordleKeyboardToggle.addEventListener('click', () => {
+  setWordleKeyboardExpanded(!isWordleKeyboardExpanded);
+});
+
+wordleKeyboard.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+
+  const button = target.closest<HTMLButtonElement>('button.wordle-key');
+  if (!button) {
+    return;
+  }
+
+  const action = button.dataset.action;
+  if (action === 'backspace') {
+    removeLastWordleLetter();
+  } else if (action === 'clear-line') {
+    clearWordleLine();
+  } else if (button.dataset.key) {
+    appendWordleLetter(button.dataset.key);
+  }
+
+  wordleGrid.focus();
+});
 
 for (const button of wordleCellButtons) {
   button.addEventListener('click', () => {
@@ -703,4 +898,5 @@ for (const button of wordleCellButtons) {
 }
 
 syncActiveInputIndex();
+setSearchMode(activeSearchMode, { syncUrl: false });
 void loadDictionary();

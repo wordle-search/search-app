@@ -255,6 +255,24 @@ button {
   font-size: 0.95rem;
 }
 
+.wordle-key-letter[data-state='collect'] {
+  border-color: #228b22;
+  background: #228b22;
+  color: #ffffff;
+}
+
+.wordle-key-letter[data-state='present'] {
+  border-color: #ffd700;
+  background: #ffd700;
+  color: #0f172a;
+}
+
+.wordle-key-letter[data-state='absent'] {
+  border-color: #6c6c6c;
+  background: #6c6c6c;
+  color: #ffffff;
+}
+
 .wordle-key-action {
   width: 60px;
   height: 60px;
@@ -264,6 +282,21 @@ button {
 .wordle-key:hover {
   border-color: #38bdf8;
   background: rgb(14 116 144 / 52%);
+}
+
+.wordle-key-letter[data-state='collect']:hover {
+  border-color: #2ea62e;
+  background: #2ea62e;
+}
+
+.wordle-key-letter[data-state='present']:hover {
+  border-color: #ffe44d;
+  background: #ffe44d;
+}
+
+.wordle-key-letter[data-state='absent']:hover {
+  border-color: #808080;
+  background: #808080;
 }
 
 .wordle-key:focus-visible {

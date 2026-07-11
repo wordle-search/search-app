@@ -355,6 +355,43 @@ const renderWordleGrid = () => {
   for (let index = 0; index < wordleCells.length; index += 1) {
     renderWordleCell(index);
   }
+  syncKeyboardKeyStates();
+};
+
+const KEYBOARD_STATE_PRIORITY: Record<CellState, number> = {
+  none: 0,
+  absent: 1,
+  present: 2,
+  collect: 3,
+};
+
+const syncKeyboardKeyStates = () => {
+  const letterStates = new Map<string, CellState>();
+
+  for (const cell of wordleCells) {
+    if (!cell.letter || cell.state === 'none') {
+      continue;
+    }
+
+    const current = letterStates.get(cell.letter) ?? 'none';
+    if (
+      KEYBOARD_STATE_PRIORITY[cell.state] > KEYBOARD_STATE_PRIORITY[current]
+    ) {
+      letterStates.set(cell.letter, cell.state);
+    }
+  }
+
+  for (const button of wordleKeyboard.querySelectorAll<HTMLButtonElement>(
+    '.wordle-key-letter',
+  )) {
+    const letter = button.dataset.key;
+    const state = letter ? (letterStates.get(letter) ?? 'none') : 'none';
+    if (state === 'none') {
+      delete button.dataset.state;
+    } else {
+      button.dataset.state = state;
+    }
+  }
 };
 
 const syncActiveCellHighlight = () => {
@@ -675,6 +712,7 @@ const appendWordleLetter = (letter: string) => {
   renderWordleCell(activeInputIndex);
   activeInputIndex += 1;
   syncActiveCellHighlight();
+  syncKeyboardKeyStates();
   runSearch();
 };
 
@@ -688,6 +726,7 @@ const removeLastWordleLetter = () => {
   wordleCells[activeInputIndex].state = 'none';
   renderWordleCell(activeInputIndex);
   syncActiveCellHighlight();
+  syncKeyboardKeyStates();
   runSearch();
 };
 
@@ -706,6 +745,7 @@ const cycleWordleCellState = (index: number) => {
   }
 
   renderWordleCell(index);
+  syncKeyboardKeyStates();
   runSearch();
 };
 
@@ -753,6 +793,7 @@ const clearWordleLine = () => {
 
   activeInputIndex = startIndex;
   syncActiveCellHighlight();
+  syncKeyboardKeyStates();
   runSearch();
 };
 

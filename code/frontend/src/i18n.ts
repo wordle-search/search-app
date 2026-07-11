@@ -9,6 +9,10 @@ export type AppCopy = {
   tabRegexSearch: string;
   tabWordleSearch: string;
   wordleClear: string;
+  wordleExpandKeyboard: string;
+  wordleCollapseKeyboard: string;
+  wordleBackspace: string;
+  wordleClearLine: string;
   regexLabel: string;
   regexPlaceholder: string;
   searchOptionsLabel: string;
@@ -51,6 +55,10 @@ export const getI18n = (locale = 'en-US') => {
         tabRegexSearch: '正規表現検索',
         tabWordleSearch: 'Wordle風検索',
         wordleClear: 'クリア',
+        wordleExpandKeyboard: 'キーボードを展開する',
+        wordleCollapseKeyboard: 'キーボードを収納する',
+        wordleBackspace: '直前の文字を削除',
+        wordleClearLine: 'この段をクリア',
         regexLabel: '正規表現',
         regexPlaceholder: '例: ^a.*e$',
         searchOptionsLabel: '検索オプション',
@@ -91,6 +99,10 @@ export const getI18n = (locale = 'en-US') => {
         tabRegexSearch: 'RegEx Search',
         tabWordleSearch: 'Wordle-like Search',
         wordleClear: 'Clear',
+        wordleExpandKeyboard: 'Expand Keyboard',
+        wordleCollapseKeyboard: 'Collapse Keyboard',
+        wordleBackspace: 'BackSpace',
+        wordleClearLine: 'clear this line',
         regexLabel: 'Regular expression',
         regexPlaceholder: 'Example: ^a.*e$',
         searchOptionsLabel: 'Search options',

@@ -1,4 +1,5 @@
-const DEFAULT_ANSWERS_KEY = "answers.json";
+const DEFAULT_WORDS_KEY = "assets/words.json.gz";
+const DEFAULT_WIKIPEDIA_KEY = "assets/wikipedia.json.gz";
 const DEFAULT_TIME_ZONE = "America/New_York";
 const LINE_BROADCAST_URL = "https://api.line.me/v2/bot/message/broadcast";
 const MANUAL_SCHEDULED_PATH = "/debug/scheduled";
@@ -48,22 +49,33 @@ export default {
 
 export async function updateAnswers(env, scheduledTime = Date.now()) {
   const bucket = getAnswersBucket(env);
-  const key = env.ANSWERS_KEY || DEFAULT_ANSWERS_KEY;
+  const wordsKey = env.WORDS_KEY || DEFAULT_WORDS_KEY;
+  const wikipediaKey = env.WIKIPEDIA_KEY || DEFAULT_WIKIPEDIA_KEY;
   const timeZone = env.WORDLE_TIME_ZONE || DEFAULT_TIME_ZONE;
   const date = getDateStringForTimeZone(new Date(scheduledTime), timeZone);
 
-  const answers = await readAnswers(bucket, key);
+  const [base, wikipedia] = await Promise.all([
+    readAnswers(bucket, wordsKey),
+    readAnswers(bucket, wikipediaKey),
+  ]);
   const solution = await fetchSolution(date);
-  const nextAnswers = removeAnswer(answers, solution);
-
-  await writeAnswers(bucket, key, nextAnswers);
+  const lists = await removeAnswers(
+    bucket,
+    {
+      base,
+      wikipedia,
+    },
+    solution,
+    {
+      wordsKey,
+      wikipediaKey,
+    },
+  );
 
   const result = {
-    key,
     date,
     solution,
-    removed: nextAnswers.length !== answers.length,
-    total: nextAnswers.length,
+    ...lists,
   };
 
   await broadcastProcessingResult(env, result);
@@ -90,7 +102,7 @@ export function getDateStringForTimeZone(date, timeZone = DEFAULT_TIME_ZONE) {
   return `${year}-${month}-${day}`;
 }
 
-export async function readAnswers(bucket, key = DEFAULT_ANSWERS_KEY) {
+export async function readAnswers(bucket, key) {
   const object = await bucket.get(key);
 
   if (!object) {
@@ -136,7 +148,30 @@ export function removeAnswer(answers, answer) {
   return answers.filter((candidate) => candidate !== answer);
 }
 
-export async function writeAnswers(bucket, key = DEFAULT_ANSWERS_KEY, answers) {
+export async function removeAnswers(bucket, lists, solution, keys) {
+  const nextBase = removeAnswer(lists.base, solution);
+  const nextWikipedia = removeAnswer(lists.wikipedia, solution);
+
+  await Promise.all([
+    writeAnswers(bucket, keys.wordsKey, nextBase),
+    writeAnswers(bucket, keys.wikipediaKey, nextWikipedia),
+  ]);
+
+  return {
+    base: {
+      key: keys.wordsKey,
+      removed: nextBase.length !== lists.base.length,
+      total: nextBase.length,
+    },
+    wikipedia: {
+      key: keys.wikipediaKey,
+      removed: nextWikipedia.length !== lists.wikipedia.length,
+      total: nextWikipedia.length,
+    },
+  };
+}
+
+export async function writeAnswers(bucket, key, answers) {
   const body = await gzipString(`${JSON.stringify(answers)}\n`);
 
   await bucket.put(key, body, {
@@ -175,9 +210,12 @@ function formatProcessingResult(result) {
     "Wordle answers update completed.",
     `date: ${result.date}`,
     `solution: ${result.solution}`,
-    `removed: ${result.removed}`,
-    `total: ${result.total}`,
-    `key: ${result.key}`,
+    `base.key: ${result.base.key}`,
+    `base.removed: ${result.base.removed}`,
+    `base.total: ${result.base.total}`,
+    `wikipedia.key: ${result.wikipedia.key}`,
+    `wikipedia.removed: ${result.wikipedia.removed}`,
+    `wikipedia.total: ${result.wikipedia.total}`,
   ].join("\n");
 }
 

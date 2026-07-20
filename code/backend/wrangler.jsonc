@@ -13,7 +13,8 @@
     }
   ],
   "vars": {
-    "ANSWERS_KEY": "assets/words.json.gz",
+    "WORDS_KEY": "assets/words.json.gz",
+    "WIKIPEDIA_KEY": "assets/wikipedia.json.gz",
     "WORDLE_TIME_ZONE": "America/New_York"
   },
   "observability": {

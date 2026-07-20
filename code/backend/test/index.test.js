@@ -5,10 +5,14 @@ import {
   getDateStringForTimeZone,
   readAnswers,
   removeAnswer,
+  removeAnswers,
   updateAnswers,
   writeAnswers,
 } from "../src/index.js";
 import worker from "../src/index.js";
+
+const WORDS_KEY = "assets/words.json.gz";
+const WIKIPEDIA_KEY = "assets/wikipedia.json.gz";
 
 test("getDateStringForTimeZone formats the date in the configured time zone", () => {
   const date = new Date("2026-05-30T03:00:00.000Z");
@@ -21,17 +25,17 @@ test("readAnswers returns an empty array when the object does not exist", async 
   const bucket = makeBucket();
 
   await assert.doesNotReject(async () => {
-    const answers = await readAnswers(bucket);
+    const answers = await readAnswers(bucket, WORDS_KEY);
     assert.deepEqual(answers, []);
   });
 });
 
 test("readAnswers rejects invalid JSON shapes", async () => {
   const bucket = makeBucket({
-    "answers.json": await gzipJson({ answers: ["smile"] }),
+    [WORDS_KEY]: await gzipJson({ answers: ["smile"] }),
   });
 
-  await assert.rejects(() => readAnswers(bucket), /must contain a JSON array/);
+  await assert.rejects(() => readAnswers(bucket, WORDS_KEY), /must contain a JSON array/);
 });
 
 test("removeAnswer removes the solved word from candidate answers", () => {
@@ -39,23 +43,56 @@ test("removeAnswer removes the solved word from candidate answers", () => {
   assert.deepEqual(removeAnswer(["smile"], "clang"), ["smile"]);
 });
 
+test("removeAnswers updates base and wikipedia lists in R2", async () => {
+  const bucket = makeBucket();
+
+  const result = await removeAnswers(
+    bucket,
+    {
+      base: ["smile", "clang"],
+      wikipedia: ["clang", "orbit"],
+    },
+    "clang",
+    {
+      wordsKey: WORDS_KEY,
+      wikipediaKey: WIKIPEDIA_KEY,
+    },
+  );
+
+  assert.deepEqual(await gunzipJson(bucket.store.get(WORDS_KEY)), ["smile"]);
+  assert.deepEqual(await gunzipJson(bucket.store.get(WIKIPEDIA_KEY)), ["orbit"]);
+  assert.deepEqual(result, {
+    base: {
+      key: WORDS_KEY,
+      removed: true,
+      total: 1,
+    },
+    wikipedia: {
+      key: WIKIPEDIA_KEY,
+      removed: true,
+      total: 1,
+    },
+  });
+});
+
 test("writeAnswers stores GZip JSON with application/json metadata", async () => {
   const bucket = makeBucket();
 
-  await writeAnswers(bucket, "answers.json", ["smile"]);
+  await writeAnswers(bucket, WORDS_KEY, ["smile"]);
 
-  assert.equal(bucket.store.get("answers.json") instanceof ArrayBuffer, true);
-  assert.deepEqual(await gunzipJson(bucket.store.get("answers.json")), ["smile"]);
+  assert.equal(bucket.store.get(WORDS_KEY) instanceof ArrayBuffer, true);
+  assert.deepEqual(await gunzipJson(bucket.store.get(WORDS_KEY)), ["smile"]);
   assert.equal(
-    bucket.metadata.get("answers.json").httpMetadata.contentType,
+    bucket.metadata.get(WORDS_KEY).httpMetadata.contentType,
     "application/json; charset=utf-8",
   );
-  assert.equal(bucket.metadata.get("answers.json").httpMetadata.contentEncoding, "gzip");
+  assert.equal(bucket.metadata.get(WORDS_KEY).httpMetadata.contentEncoding, "gzip");
 });
 
-test("updateAnswers reads R2, fetches the NYT solution, and writes the new list", async () => {
+test("updateAnswers reads R2, fetches the NYT solution, and writes the new lists", async () => {
   const bucket = makeBucket({
-    "answers.json": await gzipJson(["smile", "clang"]),
+    [WORDS_KEY]: await gzipJson(["smile", "clang"]),
+    [WIKIPEDIA_KEY]: await gzipJson(["clang", "orbit"]),
   });
   const fetchStub = stubFetch([
     {
@@ -72,20 +109,29 @@ test("updateAnswers reads R2, fetches the NYT solution, and writes the new list"
     const result = await updateAnswers(
       {
         ANSWERS_BUCKET: bucket,
-        ANSWERS_KEY: "answers.json",
+        WORDS_KEY,
+        WIKIPEDIA_KEY,
         LINE_MESSAGING_API_TOKEN: "line-token",
         WORDLE_TIME_ZONE: "UTC",
       },
       Date.parse("2026-05-29T10:00:00.000Z"),
     );
 
-    assert.deepEqual(await gunzipJson(bucket.store.get("answers.json")), ["smile"]);
+    assert.deepEqual(await gunzipJson(bucket.store.get(WORDS_KEY)), ["smile"]);
+    assert.deepEqual(await gunzipJson(bucket.store.get(WIKIPEDIA_KEY)), ["orbit"]);
     assert.deepEqual(result, {
-      key: "answers.json",
       date: "2026-05-29",
       solution: "clang",
-      removed: true,
-      total: 1,
+      base: {
+        key: WORDS_KEY,
+        removed: true,
+        total: 1,
+      },
+      wikipedia: {
+        key: WIKIPEDIA_KEY,
+        removed: true,
+        total: 1,
+      },
     });
     assert.equal(fetchStub.calls[1].input, "https://api.line.me/v2/bot/message/broadcast");
     assert.equal(fetchStub.calls[1].init.method, "POST");
@@ -98,9 +144,12 @@ test("updateAnswers reads R2, fetches the NYT solution, and writes the new list"
             "Wordle answers update completed.",
             "date: 2026-05-29",
             "solution: clang",
-            "removed: true",
-            "total: 1",
-            "key: answers.json",
+            `base.key: ${WORDS_KEY}`,
+            "base.removed: true",
+            "base.total: 1",
+            `wikipedia.key: ${WIKIPEDIA_KEY}`,
+            "wikipedia.removed: true",
+            "wikipedia.total: 1",
           ].join("\n"),
         },
       ],
@@ -112,7 +161,8 @@ test("updateAnswers reads R2, fetches the NYT solution, and writes the new list"
 
 test("manual scheduled endpoint runs the update handler", async () => {
   const bucket = makeBucket({
-    "answers.json": await gzipJson(["smile", "clang"]),
+    [WORDS_KEY]: await gzipJson(["smile", "clang"]),
+    [WIKIPEDIA_KEY]: await gzipJson(["clang", "orbit"]),
   });
   const fetchStub = stubFetch([
     {
@@ -132,15 +182,17 @@ test("manual scheduled endpoint runs the update handler", async () => {
       }),
       {
         ANSWERS_BUCKET: bucket,
-        ANSWERS_KEY: "answers.json",
+        WORDS_KEY,
+        WIKIPEDIA_KEY,
         LINE_MESSAGING_API_TOKEN: "line-token",
         WORDLE_TIME_ZONE: "UTC",
       },
     );
 
     assert.equal(response.status, 200);
-    assert.deepEqual(await gunzipJson(bucket.store.get("answers.json")), ["smile"]);
-    assert.equal((await response.json()).result.removed, true);
+    assert.deepEqual(await gunzipJson(bucket.store.get(WORDS_KEY)), ["smile"]);
+    assert.deepEqual(await gunzipJson(bucket.store.get(WIKIPEDIA_KEY)), ["orbit"]);
+    assert.equal((await response.json()).result.base.removed, true);
   } finally {
     fetchStub.restore();
   }

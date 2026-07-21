@@ -5,7 +5,13 @@ export type AppCopy = {
   leadPrefix: string;
   leadHref: string;
   leadSuffix: string;
+  settingsButtonLabel: string;
+  colorModeLabel: string;
+  colorModeLight: string;
+  colorModeDark: string;
+  languageSettingLabel: string;
   languageToggleLabel: string;
+  wikipediaDictionaryLabel: string;
   tabRegexSearch: string;
   tabWordleSearch: string;
   wordleClear: string;
@@ -51,7 +57,13 @@ export const getI18n = (locale = 'en-US') => {
         leadHref: 'https://github.com/dwyl/english-words',
         leadSuffix:
           'を辞書として、正規表現に一致する５文字の英単語をインクリメンタルに検索します。',
+        settingsButtonLabel: '設定',
+        colorModeLabel: '配色',
+        colorModeLight: 'ライトモード',
+        colorModeDark: 'ダークモード',
+        languageSettingLabel: '言語',
         languageToggleLabel: '表示言語を切り替える',
+        wikipediaDictionaryLabel: 'Wikipediaのタイトル',
         tabRegexSearch: '正規表現検索',
         tabWordleSearch: 'Wordle風検索',
         wordleClear: 'クリア',
@@ -95,7 +107,13 @@ export const getI18n = (locale = 'en-US') => {
         leadHref: 'https://github.com/dwyl/english-words',
         leadSuffix:
           'is used as the dictionary for incremental regular expression search for 5-letter English words to play Wordle.',
+        settingsButtonLabel: 'Settings',
+        colorModeLabel: 'Color',
+        colorModeLight: 'Light mode',
+        colorModeDark: 'Dark mode',
+        languageSettingLabel: 'Language',
         languageToggleLabel: 'Switch display language',
+        wikipediaDictionaryLabel: 'Wikipedia titles',
         tabRegexSearch: 'RegEx Search',
         tabWordleSearch: 'Wordle-like Search',
         wordleClear: 'Clear',

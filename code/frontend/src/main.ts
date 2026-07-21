@@ -13,10 +13,31 @@ type WordleCell = {
 
 const DEFAULT_PATTERN = '^.....$';
 const LANGUAGE_STORAGE_KEY = 'word-search-language';
+const COLOR_MODE_COOKIE = 'color-mode';
+const LANGUAGE_COOKIE = 'language';
+const WIKIPEDIA_DICTIONARY_COOKIE = 'wikipedia-dictionary';
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const RESULT_PAGE_SIZE = 100;
 const WORDLE_ROWS = 6;
 const WORDLE_COLS = 5;
 const MARKED_STATE_CYCLE: CellState[] = ['collect', 'present', 'absent'];
+
+type ColorMode = 'light' | 'dark';
+
+const getCookie = (name: string): string | null => {
+  const encodedName = `${encodeURIComponent(name)}=`;
+  for (const part of document.cookie.split(';')) {
+    const cookie = part.trim();
+    if (cookie.startsWith(encodedName)) {
+      return decodeURIComponent(cookie.slice(encodedName.length));
+    }
+  }
+  return null;
+};
+
+const setCookie = (name: string, value: string) => {
+  document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+};
 
 const getDictionaryUrl = (): string => {
   const dictionaryUrl = import.meta.env.VITE_DICTIONARY_URL;
@@ -31,10 +52,38 @@ const getDictionaryUrl = (): string => {
   }
 };
 
+const getWikipediaUrl = (): string => {
+  const wikipediaUrl = import.meta.env.VITE_WIKIPEDIA_URL;
+  if (!wikipediaUrl) {
+    return 'wikipedia.json';
+  }
+
+  try {
+    return new URL(wikipediaUrl).toString();
+  } catch {
+    return wikipediaUrl;
+  }
+};
+
+const resolveColorMode = (value: string | null): ColorMode =>
+  value === 'light' ? 'light' : 'dark';
+
+const getInitialColorMode = (): ColorMode =>
+  resolveColorMode(getCookie(COLOR_MODE_COOKIE));
+
+const getInitialWikipediaEnabled = (): boolean =>
+  getCookie(WIKIPEDIA_DICTIONARY_COOKIE) === 'on';
+
 const getInitialLocale = () =>
-  window.localStorage.getItem(LANGUAGE_STORAGE_KEY) || navigator.language;
+  getCookie(LANGUAGE_COOKIE) ||
+  window.localStorage.getItem(LANGUAGE_STORAGE_KEY) ||
+  navigator.language;
 
 let { copy, numberFormatter } = getI18n(getInitialLocale());
+const initialColorMode = getInitialColorMode();
+const initialWikipediaEnabled = getInitialWikipediaEnabled();
+
+document.documentElement.dataset.colorMode = initialColorMode;
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -104,16 +153,67 @@ app.innerHTML = `
           </p>
         </div>
 
-        <label class="language-toggle" aria-label="${copy.languageToggleLabel}">
-          <span>JA</span>
-          <input
-            id="language-toggle-input"
-            type="checkbox"
-            ${copy.lang === 'en' ? 'checked' : ''}
-          />
-          <span class="language-toggle-track" aria-hidden="true"></span>
-          <span>EN</span>
-        </label>
+        <div class="hero-header-actions">
+          <button
+            class="settings-button"
+            id="settings-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="setting-modal"
+            title="${copy.settingsButtonLabel}"
+            aria-label="${copy.settingsButtonLabel}"
+          ><i class="fa-solid fa-gear" aria-hidden="true"></i></button>
+
+          <div class="setting-modal" id="setting-modal" role="dialog" aria-label="${copy.settingsButtonLabel}" hidden>
+            <div class="setting-row">
+              <p class="setting-label" id="color-mode-label">${copy.colorModeLabel}</p>
+              <div class="setting-control">
+                <label class="setting-toggle">
+                  <span id="color-mode-light-label">${copy.colorModeLight}</span>
+                  <input
+                    id="color-mode"
+                    type="checkbox"
+                    ${initialColorMode === 'dark' ? 'checked' : ''}
+                  />
+                  <span class="language-toggle-track" aria-hidden="true"></span>
+                  <span id="color-mode-dark-label">${copy.colorModeDark}</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <p class="setting-label" id="language-setting-label">${copy.languageSettingLabel}</p>
+              <div class="setting-control">
+                <label class="language-toggle" aria-label="${copy.languageToggleLabel}">
+                  <span>JA</span>
+                  <input
+                    id="language-toggle-input"
+                    type="checkbox"
+                    ${copy.lang === 'en' ? 'checked' : ''}
+                  />
+                  <span class="language-toggle-track" aria-hidden="true"></span>
+                  <span>EN</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <p class="setting-label" id="wikipedia-dictionary-label">${copy.wikipediaDictionaryLabel}</p>
+              <div class="setting-control">
+                <label class="setting-toggle" aria-label="${copy.wikipediaDictionaryLabel}">
+                  <span>OFF</span>
+                  <input
+                    id="wikipedia-dictionary"
+                    type="checkbox"
+                    ${initialWikipediaEnabled ? 'checked' : ''}
+                  />
+                  <span class="language-toggle-track" aria-hidden="true"></span>
+                  <span>ON</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="hero-tabs" role="tablist" aria-label="${copy.searchOptionsLabel}">
@@ -213,6 +313,27 @@ app.innerHTML = `
 
 const patternInput =
   document.querySelector<HTMLTextAreaElement>('#pattern-input');
+const settingsButton =
+  document.querySelector<HTMLButtonElement>('#settings-button');
+const settingModal = document.querySelector<HTMLDivElement>('#setting-modal');
+const colorModeInput = document.querySelector<HTMLInputElement>('#color-mode');
+const colorModeLabel =
+  document.querySelector<HTMLParagraphElement>('#color-mode-label');
+const colorModeLightLabel = document.querySelector<HTMLSpanElement>(
+  '#color-mode-light-label',
+);
+const colorModeDarkLabel = document.querySelector<HTMLSpanElement>(
+  '#color-mode-dark-label',
+);
+const languageSettingLabel = document.querySelector<HTMLParagraphElement>(
+  '#language-setting-label',
+);
+const wikipediaDictionaryLabel = document.querySelector<HTMLParagraphElement>(
+  '#wikipedia-dictionary-label',
+);
+const wikipediaDictionaryInput = document.querySelector<HTMLInputElement>(
+  '#wikipedia-dictionary',
+);
 const languageToggleInput = document.querySelector<HTMLInputElement>(
   '#language-toggle-input',
 );
@@ -267,6 +388,15 @@ const wordleCellButtons = document.querySelectorAll<HTMLButtonElement>(
 
 if (
   !patternInput ||
+  !settingsButton ||
+  !settingModal ||
+  !colorModeInput ||
+  !colorModeLabel ||
+  !colorModeLightLabel ||
+  !colorModeDarkLabel ||
+  !languageSettingLabel ||
+  !wikipediaDictionaryLabel ||
+  !wikipediaDictionaryInput ||
   !languageToggleInput ||
   !ignoreCaseInput ||
   !globalMatchInput ||
@@ -310,6 +440,8 @@ patternInput.value = queryPattern ?? DEFAULT_PATTERN;
 const resolveSearchMode = (value: string | null): SearchMode =>
   value === 'wordle' ? 'wordle' : 'regex';
 
+let baseWords: string[] = [];
+let wikipediaWords: string[] = [];
 let words: string[] = [];
 let currentMatches: string[] = [];
 let renderedResultCount = 0;
@@ -317,6 +449,7 @@ let pendingRender = 0;
 let activeSearchMode: SearchMode = resolveSearchMode(queryParams.get('p'));
 let activeInputIndex = 0;
 let isWordleKeyboardExpanded = false;
+let isSettingModalOpen = false;
 
 const wordleCells: WordleCell[] = Array.from(
   { length: WORDLE_ROWS * WORDLE_COLS },
@@ -418,7 +551,18 @@ const updateLocalizedText = () => {
   document.documentElement.lang = copy.lang;
   pageEyebrow.textContent = copy.eyebrow;
   pageTitle.textContent = copy.appTitle;
+  settingsButton.title = copy.settingsButtonLabel;
+  settingsButton.setAttribute('aria-label', copy.settingsButtonLabel);
+  settingModal.setAttribute('aria-label', copy.settingsButtonLabel);
+  colorModeLabel.textContent = copy.colorModeLabel;
+  colorModeLightLabel.textContent = copy.colorModeLight;
+  colorModeDarkLabel.textContent = copy.colorModeDark;
+  languageSettingLabel.textContent = copy.languageSettingLabel;
   languageToggle.setAttribute('aria-label', copy.languageToggleLabel);
+  wikipediaDictionaryLabel.textContent = copy.wikipediaDictionaryLabel;
+  wikipediaDictionaryInput
+    .closest('label')
+    ?.setAttribute('aria-label', copy.wikipediaDictionaryLabel);
   leadLink.href = copy.leadHref;
   leadPrefix.textContent = copy.leadPrefix;
   leadSuffix.textContent = copy.leadSuffix;
@@ -458,8 +602,31 @@ const setLocale = (locale: string) => {
   const nextI18n = getI18n(locale);
   copy = nextI18n.copy;
   numberFormatter = nextI18n.numberFormatter;
+  setCookie(LANGUAGE_COOKIE, copy.lang === 'en' ? 'en' : 'ja');
   window.localStorage.setItem(LANGUAGE_STORAGE_KEY, copy.lang);
   updateLocalizedText();
+};
+
+const setColorMode = (mode: ColorMode) => {
+  document.documentElement.dataset.colorMode = mode;
+  colorModeInput.checked = mode === 'dark';
+  setCookie(COLOR_MODE_COOKIE, mode);
+};
+
+const setSettingModalOpen = (open: boolean) => {
+  isSettingModalOpen = open;
+  settingModal.hidden = !open;
+  settingsButton.setAttribute('aria-expanded', String(open));
+};
+
+const applyWordList = () => {
+  const includeWikipedia = wikipediaDictionaryInput.checked;
+  if (includeWikipedia && wikipediaWords.length > 0) {
+    words = [...new Set([...baseWords, ...wikipediaWords])];
+    return;
+  }
+
+  words = baseWords;
 };
 
 const buildShareUrl = () => {
@@ -850,7 +1017,8 @@ const loadDictionary = async () => {
     }
 
     const dictionary = (await response.json()) as DictionaryPayload;
-    words = normalizeDictionary(dictionary);
+    baseWords = normalizeDictionary(dictionary);
+    applyWordList();
     runSearch();
   } catch (error) {
     resultsTitle.textContent = copy.dictionaryLoadFailedTitle;
@@ -862,7 +1030,66 @@ const loadDictionary = async () => {
   }
 };
 
+const loadWikipedia = async () => {
+  try {
+    const wikipediaUrl = getWikipediaUrl();
+    const response = await fetch(wikipediaUrl);
+    if (!response.ok) {
+      throw new Error(copy.dictionaryLoadFailedStatus(response.status));
+    }
+
+    const dictionary = (await response.json()) as DictionaryPayload;
+    wikipediaWords = normalizeDictionary(dictionary);
+    if (wikipediaDictionaryInput.checked) {
+      applyWordList();
+      runSearch();
+    }
+  } catch (error) {
+    wikipediaWords = [];
+    if (wikipediaDictionaryInput.checked) {
+      resultsTitle.textContent = copy.dictionaryLoadFailedTitle;
+      setStatus(
+        error instanceof Error ? error.message : copy.dictionaryLoadFailedTitle,
+        true,
+      );
+    }
+  }
+};
+
 patternInput.addEventListener('input', runSearch);
+settingsButton.addEventListener('click', (event) => {
+  event.stopPropagation();
+  setSettingModalOpen(!isSettingModalOpen);
+});
+settingModal.addEventListener('click', (event) => {
+  event.stopPropagation();
+});
+document.addEventListener('click', () => {
+  if (isSettingModalOpen) {
+    setSettingModalOpen(false);
+  }
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && isSettingModalOpen) {
+    setSettingModalOpen(false);
+  }
+});
+colorModeInput.addEventListener('change', () => {
+  setColorMode(colorModeInput.checked ? 'dark' : 'light');
+});
+wikipediaDictionaryInput.addEventListener('change', () => {
+  setCookie(
+    WIKIPEDIA_DICTIONARY_COOKIE,
+    wikipediaDictionaryInput.checked ? 'on' : 'off',
+  );
+  applyWordList();
+  if (words.length === 0) {
+    resultsTitle.textContent = copy.loadingDictionary;
+    setStatus(copy.loadingDictionaryStatus);
+    return;
+  }
+  runSearch();
+});
 languageToggleInput.addEventListener('change', () => {
   setLocale(languageToggleInput.checked ? 'en' : 'ja-JP');
 
@@ -940,4 +1167,10 @@ for (const button of wordleCellButtons) {
 
 syncActiveInputIndex();
 setSearchMode(activeSearchMode, { syncUrl: false });
-void loadDictionary();
+setCookie(COLOR_MODE_COOKIE, initialColorMode);
+setCookie(LANGUAGE_COOKIE, copy.lang === 'en' ? 'en' : 'ja');
+setCookie(
+  WIKIPEDIA_DICTIONARY_COOKIE,
+  initialWikipediaEnabled ? 'on' : 'off',
+);
+void Promise.all([loadDictionary(), loadWikipedia()]);

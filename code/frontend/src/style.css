@@ -1,9 +1,25 @@
 :root {
-  color: #e5edf6;
-  background:
+  --page-fg: #e5edf6;
+  --page-bg:
     radial-gradient(circle at top left, rgb(56 189 248 / 22%), transparent 34rem),
     radial-gradient(circle at bottom right, rgb(129 140 248 / 18%), transparent 30rem),
     #111827;
+  --surface-bg: rgb(15 23 42 / 74%);
+  --surface-border: rgb(148 163 184 / 18%);
+  --surface-shadow: 0 24px 80px rgb(0 0 0 / 30%);
+  --muted-fg: #cbd5e1;
+  --accent: #38bdf8;
+  --accent-soft: #bae6fd;
+  --code-fg: #bae6fd;
+  --control-bg: rgb(8 47 73 / 72%);
+  --control-border: rgb(56 189 248 / 22%);
+  --control-active-bg: rgb(14 116 144 / 52%);
+  --tab-bg: rgb(148 163 184 / 12%);
+  --modal-bg: rgb(15 23 42 / 96%);
+  --modal-shadow: 0 16px 48px rgb(0 0 0 / 45%);
+  --toggle-knob: #bae6fd;
+  color: var(--page-fg);
+  background: var(--page-bg);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -11,6 +27,28 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-color-mode='light'] {
+  --page-fg: #0f172a;
+  --page-bg:
+    radial-gradient(circle at top left, rgb(14 165 233 / 18%), transparent 34rem),
+    radial-gradient(circle at bottom right, rgb(99 102 241 / 12%), transparent 30rem),
+    #f1f5f9;
+  --surface-bg: rgb(255 255 255 / 88%);
+  --surface-border: rgb(100 116 139 / 22%);
+  --surface-shadow: 0 24px 80px rgb(15 23 42 / 12%);
+  --muted-fg: #475569;
+  --accent: #0284c7;
+  --accent-soft: #0369a1;
+  --code-fg: #0369a1;
+  --control-bg: rgb(224 242 254 / 88%);
+  --control-border: rgb(14 165 233 / 28%);
+  --control-active-bg: rgb(186 230 253 / 72%);
+  --tab-bg: rgb(148 163 184 / 14%);
+  --modal-bg: rgb(255 255 255 / 98%);
+  --modal-shadow: 0 16px 48px rgb(15 23 42 / 16%);
+  --toggle-knob: #0284c7;
 }
 
 * {
@@ -30,7 +68,7 @@ textarea {
 }
 
 code {
-  color: #bae6fd;
+  color: var(--code-fg);
 }
 
 button {
@@ -55,10 +93,10 @@ button {
 
 .hero,
 .panel {
-  border: 1px solid rgb(148 163 184 / 18%);
+  border: 1px solid var(--surface-border);
   border-radius: 28px;
-  background: rgb(15 23 42 / 74%);
-  box-shadow: 0 24px 80px rgb(0 0 0 / 30%);
+  background: var(--surface-bg);
+  box-shadow: var(--surface-shadow);
 }
 
 .hero {
@@ -72,6 +110,74 @@ button {
   justify-content: space-between;
 }
 
+.hero-header-actions {
+  position: relative;
+  flex: none;
+}
+
+.settings-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border: 1px solid var(--control-border);
+  border-radius: 12px;
+  background: var(--control-bg);
+  color: var(--accent-soft);
+  font-size: 1.35rem;
+}
+
+.settings-button:hover,
+.settings-button[aria-expanded='true'] {
+  border-color: var(--accent);
+  background: var(--control-active-bg);
+}
+
+.settings-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgb(56 189 248 / 16%);
+}
+
+.setting-modal {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 30;
+  display: grid;
+  gap: 1rem;
+  width: min(22rem, calc(100vw - 3rem));
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  background: var(--modal-bg);
+  box-shadow: var(--modal-shadow);
+}
+
+.setting-modal[hidden] {
+  display: none;
+}
+
+.setting-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.setting-label {
+  margin: 0;
+  color: var(--muted-fg);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.setting-control {
+  display: flex;
+  justify-content: center;
+}
+
 .hero-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -81,10 +187,10 @@ button {
 
 .hero-tab {
   padding: 0.65rem 1.1rem;
-  border: 1px solid rgb(148 163 184 / 18%);
+  border: 1px solid var(--surface-border);
   border-radius: 999px;
-  background: rgb(148 163 184 / 12%);
-  color: #cbd5e1;
+  background: var(--tab-bg);
+  color: var(--muted-fg);
   font-size: 0.92rem;
   font-weight: 700;
   transition:
@@ -95,13 +201,13 @@ button {
 
 .hero-tab:hover {
   border-color: rgb(56 189 248 / 40%);
-  color: #e2e8f0;
+  color: var(--page-fg);
 }
 
 .hero-tab[aria-selected='true'] {
-  border-color: #38bdf8;
-  background: rgb(14 116 144 / 52%);
-  color: #bae6fd;
+  border-color: var(--accent);
+  background: var(--control-active-bg);
+  color: var(--accent-soft);
 }
 
 .hero-tab:focus-visible {
@@ -194,16 +300,16 @@ button {
   justify-content: center;
   width: 60px;
   height: 60px;
-  border: 1px solid rgb(56 189 248 / 22%);
+  border: 1px solid var(--control-border);
   border-radius: 12px;
-  background: rgb(8 47 73 / 72%);
-  color: #bae6fd;
+  background: var(--control-bg);
+  color: var(--accent-soft);
   font-size: 1.35rem;
 }
 
 .wordle-keyboard-toggle:hover {
-  border-color: #38bdf8;
-  background: rgb(14 116 144 / 52%);
+  border-color: var(--accent);
+  background: var(--control-active-bg);
 }
 
 .wordle-keyboard-toggle:focus-visible {
@@ -325,18 +431,20 @@ button {
   box-shadow: 0 0 0 4px rgb(56 189 248 / 16%);
 }
 
-.language-toggle {
+.language-toggle,
+.setting-toggle {
   display: inline-flex;
   flex: none;
   gap: 0.55rem;
   align-items: center;
-  margin-top: 0.2rem;
-  color: #cbd5e1;
-  font-size: 0.85rem;
+  color: var(--muted-fg);
+  font-size: 0.8rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
-.language-toggle input {
+.language-toggle input,
+.setting-toggle input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
@@ -347,9 +455,9 @@ button {
   display: inline-flex;
   width: 3.1rem;
   height: 1.7rem;
-  border: 1px solid rgb(56 189 248 / 24%);
+  border: 1px solid var(--control-border);
   border-radius: 999px;
-  background: rgb(8 47 73 / 72%);
+  background: var(--control-bg);
   transition:
     background 160ms ease,
     border-color 160ms ease;
@@ -362,21 +470,24 @@ button {
   width: 1.15rem;
   height: 1.15rem;
   border-radius: 50%;
-  background: #bae6fd;
+  background: var(--toggle-knob);
   content: "";
   transition: transform 160ms ease;
 }
 
-.language-toggle input:checked + .language-toggle-track {
-  border-color: #38bdf8;
-  background: rgb(14 116 144 / 52%);
+.language-toggle input:checked + .language-toggle-track,
+.setting-toggle input:checked + .language-toggle-track {
+  border-color: var(--accent);
+  background: var(--control-active-bg);
 }
 
-.language-toggle input:checked + .language-toggle-track::after {
+.language-toggle input:checked + .language-toggle-track::after,
+.setting-toggle input:checked + .language-toggle-track::after {
   transform: translateX(1.36rem);
 }
 
-.language-toggle input:focus-visible + .language-toggle-track {
+.language-toggle input:focus-visible + .language-toggle-track,
+.setting-toggle input:focus-visible + .language-toggle-track {
   box-shadow: 0 0 0 4px rgb(56 189 248 / 16%);
 }
 
@@ -386,7 +497,7 @@ button {
 
 .eyebrow {
   margin: 0 0 0.75rem;
-  color: #38bdf8;
+  color: var(--accent);
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -413,7 +524,7 @@ h2 {
 
 .lead {
   max-width: 56rem;
-  color: #cbd5e1;
+  color: var(--muted-fg);
   font-size: clamp(1rem, 2vw, 1.2rem);
   line-height: 1.7;
 }
@@ -427,7 +538,7 @@ h2 {
 .field {
   display: grid;
   gap: 0.55rem;
-  color: #cbd5e1;
+  color: var(--muted-fg);
   font-size: 0.95rem;
 }
 
@@ -435,11 +546,11 @@ h2 {
   width: 100%;
   min-height: 9rem;
   resize: vertical;
-  border: 1px solid rgb(148 163 184 / 32%);
+  border: 1px solid var(--surface-border);
   border-radius: 16px;
   outline: none;
-  background: rgb(15 23 42 / 72%);
-  color: #f8fafc;
+  background: var(--control-bg);
+  color: var(--page-fg);
   padding: 0.95rem 1rem;
   font-family:
     "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -447,7 +558,7 @@ h2 {
 }
 
 .field textarea:focus {
-  border-color: #38bdf8;
+  border-color: var(--accent);
   box-shadow: 0 0 0 4px rgb(56 189 248 / 16%);
 }
 
@@ -463,23 +574,23 @@ h2 {
   gap: 0.45rem;
   align-items: center;
   padding: 0.7rem 0.9rem;
-  border: 1px solid rgb(148 163 184 / 18%);
+  border: 1px solid var(--surface-border);
   border-radius: 999px;
-  background: rgb(148 163 184 / 12%);
-  color: #dbeafe;
+  background: var(--tab-bg);
+  color: var(--page-fg);
   font-size: 0.9rem;
 }
 
 .option-button {
-  border-color: rgb(56 189 248 / 22%);
-  background: rgb(8 47 73 / 72%);
-  color: #bae6fd;
+  border-color: var(--control-border);
+  background: var(--control-bg);
+  color: var(--accent-soft);
   font-weight: 700;
 }
 
 .option-button:hover {
-  border-color: #38bdf8;
-  background: rgb(14 116 144 / 52%);
+  border-color: var(--accent);
+  background: var(--control-active-bg);
 }
 
 .option-button i {
@@ -498,10 +609,10 @@ h2 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgb(56 189 248 / 22%);
+  border: 1px solid var(--control-border);
   border-radius: 999px;
-  background: rgb(8 47 73 / 72%);
-  color: #bae6fd;
+  background: var(--control-bg);
+  color: var(--accent-soft);
   padding: 0.6rem 0.85rem;
   font-family:
     "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -510,8 +621,8 @@ h2 {
 }
 
 .tips button:hover {
-  border-color: #38bdf8;
-  background: rgb(14 116 144 / 52%);
+  border-color: var(--accent);
+  background: var(--control-active-bg);
 }
 
 .panel-header {
@@ -528,7 +639,7 @@ h2 {
   padding: 0.45rem 0.75rem;
   border-radius: 999px;
   background: rgb(56 189 248 / 12%);
-  color: #bae6fd;
+  color: var(--accent-soft);
   font-size: 0.85rem;
   font-weight: 700;
 }
@@ -536,7 +647,7 @@ h2 {
 .status {
   min-height: 1.5rem;
   margin-bottom: 1.25rem;
-  color: #cbd5e1;
+  color: var(--muted-fg);
 }
 
 .status-error {
@@ -556,10 +667,10 @@ h2 {
 .word-list li {
   overflow: hidden;
   padding: 0.78rem 0.9rem;
-  border: 1px solid rgb(148 163 184 / 14%);
+  border: 1px solid var(--surface-border);
   border-radius: 14px;
-  background: rgb(30 41 59 / 78%);
-  color: #f8fafc;
+  background: var(--control-bg);
+  color: var(--page-fg);
   font-family:
     "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   text-overflow: ellipsis;
@@ -569,7 +680,7 @@ h2 {
 
 .word-list li::before {
   content: counter(result) ". ";
-  color: #64748b;
+  color: var(--muted-fg);
 }
 
 .load-sentinel {

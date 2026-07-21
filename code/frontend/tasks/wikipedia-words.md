@@ -1,15 +1,10 @@
 # frontend改修指示
-## feature/frontend/add-favicon
-### 改修内容
-- Faviconの追加
-  - [favicon.ico](../../../search-app/code/frontend/src/favicon.ico)をビルド後はアセット用フォルダに格納し、
-    `<link />`タグを使って読み込むようにしてください
 ## feature/frontend/wikipedia-words
 ### 改修内容
 - 設定モーダル追加
   - `div.hero-header`の右上にボタンを配置し、クリックで展開
     - ボタンの仕様
-      - ラベル: `fa-regular fa-gear`
+      - ラベル: `fa-solid fa-gear`
       - サイズ(px): 60x60
   - 仮に`setting-modal`というパネル名とする
   - パネル外をクリックすると閉じる
@@ -33,6 +28,7 @@
         - EN: Language
     - Wikipedia辞書
       - ON/OFFトグル
+        - JA/EN共通: ON / OFF
         - ID: wikipedia-dictionary
       - ラベル
         - JA: Wikipediaのタイトル

@@ -1,0 +1,2 @@
+# about `wordle-search`
+## このアプリについて

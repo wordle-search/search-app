@@ -19,6 +19,7 @@
   "author": "@misondroid",
   "license": "ISC",
   "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
     "typescript": "^6.0.3",
     "vite": "^6.4.2"
   },

@@ -1,6 +1,24 @@
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import MarkdownIt from 'markdown-it';
+import aboutMarkdownEn from '../docs/en/about.md?raw';
+import aboutMarkdownJa from '../docs/ja/about.md?raw';
 import { getI18n } from './i18n';
 import './style.css';
+
+const markdownIt = new MarkdownIt();
+const resolveAboutMarkdown = (source: string) =>
+  source.replace(
+    /!\[([^\]]*)\]\(\.\/images\/([^)]+)\)/g,
+    (_match, alt: string, fileName: string) =>
+      `![${alt}](/images/${fileName})`,
+  );
+const aboutHtmlByLang = {
+  ja: markdownIt.render(resolveAboutMarkdown(aboutMarkdownJa)),
+  en: markdownIt.render(resolveAboutMarkdown(aboutMarkdownEn)),
+} as const;
+
+const getAboutHtml = () =>
+  copy.lang === 'en' ? aboutHtmlByLang.en : aboutHtmlByLang.ja;
 
 type DictionaryPayload = Record<string, number> | string[];
 type SearchMode = 'regex' | 'wordle';
@@ -156,6 +174,16 @@ app.innerHTML = `
         <div class="hero-header-actions">
           <button
             class="settings-button"
+            id="about-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="about-modal"
+            title="${copy.aboutButtonLabel}"
+            aria-label="${copy.aboutButtonLabel}"
+          ><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></button>
+
+          <button
+            class="settings-button"
             id="settings-button"
             type="button"
             aria-expanded="false"
@@ -309,10 +337,38 @@ app.innerHTML = `
       <div class="load-sentinel" id="load-sentinel" aria-hidden="true"></div>
     </section>
   </main>
+
+  <div
+    class="content-modal"
+    id="about-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="${copy.aboutButtonLabel}"
+    hidden
+  >
+    <div class="content-modal-backdrop" data-about-close></div>
+    <div class="content-modal-dialog">
+      <button
+        class="content-modal-close"
+        id="about-modal-close"
+        type="button"
+        title="${copy.aboutModalCloseLabel}"
+        aria-label="${copy.aboutModalCloseLabel}"
+      ><i class="fa-solid fa-x" aria-hidden="true"></i></button>
+      <div class="content-modal-body markdown-body" id="about-modal-body">${getAboutHtml()}</div>
+    </div>
+  </div>
 `;
 
 const patternInput =
   document.querySelector<HTMLTextAreaElement>('#pattern-input');
+const aboutButton =
+  document.querySelector<HTMLButtonElement>('#about-button');
+const aboutModal = document.querySelector<HTMLDivElement>('#about-modal');
+const aboutModalClose = document.querySelector<HTMLButtonElement>(
+  '#about-modal-close',
+);
+const aboutModalBody = document.querySelector<HTMLDivElement>('#about-modal-body');
 const settingsButton =
   document.querySelector<HTMLButtonElement>('#settings-button');
 const settingModal = document.querySelector<HTMLDivElement>('#setting-modal');
@@ -388,6 +444,10 @@ const wordleCellButtons = document.querySelectorAll<HTMLButtonElement>(
 
 if (
   !patternInput ||
+  !aboutButton ||
+  !aboutModal ||
+  !aboutModalClose ||
+  !aboutModalBody ||
   !settingsButton ||
   !settingModal ||
   !colorModeInput ||
@@ -450,6 +510,7 @@ let activeSearchMode: SearchMode = resolveSearchMode(queryParams.get('p'));
 let activeInputIndex = 0;
 let isWordleKeyboardExpanded = false;
 let isSettingModalOpen = false;
+let isAboutModalOpen = false;
 
 const wordleCells: WordleCell[] = Array.from(
   { length: WORDLE_ROWS * WORDLE_COLS },
@@ -551,6 +612,12 @@ const updateLocalizedText = () => {
   document.documentElement.lang = copy.lang;
   pageEyebrow.textContent = copy.eyebrow;
   pageTitle.textContent = copy.appTitle;
+  aboutButton.title = copy.aboutButtonLabel;
+  aboutButton.setAttribute('aria-label', copy.aboutButtonLabel);
+  aboutModal.setAttribute('aria-label', copy.aboutButtonLabel);
+  aboutModalClose.title = copy.aboutModalCloseLabel;
+  aboutModalClose.setAttribute('aria-label', copy.aboutModalCloseLabel);
+  aboutModalBody.innerHTML = getAboutHtml();
   settingsButton.title = copy.settingsButtonLabel;
   settingsButton.setAttribute('aria-label', copy.settingsButtonLabel);
   settingModal.setAttribute('aria-label', copy.settingsButtonLabel);
@@ -611,6 +678,13 @@ const setColorMode = (mode: ColorMode) => {
   document.documentElement.dataset.colorMode = mode;
   colorModeInput.checked = mode === 'dark';
   setCookie(COLOR_MODE_COOKIE, mode);
+};
+
+const setAboutModalOpen = (open: boolean) => {
+  isAboutModalOpen = open;
+  aboutModal.hidden = !open;
+  aboutButton.setAttribute('aria-expanded', String(open));
+  document.body.classList.toggle('content-modal-open', open);
 };
 
 const setSettingModalOpen = (open: boolean) => {
@@ -1057,8 +1131,23 @@ const loadWikipedia = async () => {
 };
 
 patternInput.addEventListener('input', runSearch);
+aboutButton.addEventListener('click', (event) => {
+  event.stopPropagation();
+  setSettingModalOpen(false);
+  setAboutModalOpen(!isAboutModalOpen);
+});
+aboutModalClose.addEventListener('click', () => {
+  setAboutModalOpen(false);
+});
+aboutModal.addEventListener('click', (event) => {
+  const target = event.target;
+  if (target instanceof Element && target.hasAttribute('data-about-close')) {
+    setAboutModalOpen(false);
+  }
+});
 settingsButton.addEventListener('click', (event) => {
   event.stopPropagation();
+  setAboutModalOpen(false);
   setSettingModalOpen(!isSettingModalOpen);
 });
 settingModal.addEventListener('click', (event) => {
@@ -1070,7 +1159,16 @@ document.addEventListener('click', () => {
   }
 });
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && isSettingModalOpen) {
+  if (event.key !== 'Escape') {
+    return;
+  }
+
+  if (isAboutModalOpen) {
+    setAboutModalOpen(false);
+    return;
+  }
+
+  if (isSettingModalOpen) {
     setSettingModalOpen(false);
   }
 });

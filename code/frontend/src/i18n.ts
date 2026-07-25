@@ -6,6 +6,8 @@ export type AppCopy = {
   leadHref: string;
   leadSuffix: string;
   settingsButtonLabel: string;
+  aboutButtonLabel: string;
+  aboutModalCloseLabel: string;
   colorModeLabel: string;
   colorModeLight: string;
   colorModeDark: string;
@@ -58,6 +60,8 @@ export const getI18n = (locale = 'en-US') => {
         leadSuffix:
           'を辞書として、正規表現に一致する５文字の英単語をインクリメンタルに検索します。',
         settingsButtonLabel: '設定',
+        aboutButtonLabel: 'このアプリについて',
+        aboutModalCloseLabel: '閉じる',
         colorModeLabel: '配色',
         colorModeLight: 'ライトモード',
         colorModeDark: 'ダークモード',
@@ -108,6 +112,8 @@ export const getI18n = (locale = 'en-US') => {
         leadSuffix:
           'is used as the dictionary for incremental regular expression search for 5-letter English words to play Wordle.',
         settingsButtonLabel: 'Settings',
+        aboutButtonLabel: 'About',
+        aboutModalCloseLabel: 'Close',
         colorModeLabel: 'Color',
         colorModeLight: 'Light mode',
         colorModeDark: 'Dark mode',

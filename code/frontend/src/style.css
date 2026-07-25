@@ -112,7 +112,10 @@ button {
 
 .hero-header-actions {
   position: relative;
+  display: flex;
   flex: none;
+  gap: 0.75rem;
+  align-items: flex-start;
 }
 
 .settings-button {
@@ -156,6 +159,122 @@ button {
 
 .setting-modal[hidden] {
   display: none;
+}
+
+.content-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.content-modal[hidden] {
+  display: none;
+}
+
+.content-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(15 23 42 / 62%);
+}
+
+.content-modal-dialog {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(44rem, calc(100vw - 2.5rem));
+  max-height: min(80vh, 52rem);
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
+  border-radius: 20px;
+  background: var(--modal-bg);
+  box-shadow: var(--modal-shadow);
+}
+
+.content-modal-close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--control-border);
+  border-radius: 10px;
+  background: var(--control-bg);
+  color: var(--accent-soft);
+  font-size: 1rem;
+}
+
+.content-modal-close:hover {
+  border-color: var(--accent);
+  background: var(--control-active-bg);
+}
+
+.content-modal-close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgb(56 189 248 / 16%);
+}
+
+.content-modal-body {
+  overflow: auto;
+  padding: 1.75rem 1.5rem 1.5rem;
+  color: var(--page-fg);
+}
+
+.markdown-body > :first-child {
+  margin-top: 0;
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  line-height: 1.25;
+}
+
+.markdown-body h1 {
+  margin-bottom: 0.85rem;
+  padding-right: 3rem;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+}
+
+.markdown-body h2 {
+  margin: 1.4rem 0 0.7rem;
+  font-size: 1.2rem;
+}
+
+.markdown-body p {
+  margin: 0 0 1rem;
+  color: var(--muted-fg);
+  line-height: 1.7;
+}
+
+.markdown-body img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0 0;
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+}
+
+.markdown-body code {
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+body.content-modal-open {
+  overflow: hidden;
 }
 
 .setting-row {

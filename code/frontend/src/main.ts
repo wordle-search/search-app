@@ -5,16 +5,64 @@ import aboutMarkdownJa from '../docs/ja/about.md?raw';
 import { getI18n } from './i18n';
 import './style.css';
 
-const markdownIt = new MarkdownIt();
+const markdownIt = new MarkdownIt({ html: true });
+const defaultLinkOpen =
+  markdownIt.renderer.rules.link_open ??
+  ((tokens, idx, options, _env, self) => self.renderToken(tokens, idx, options));
+
+markdownIt.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+  const token = tokens[idx];
+  const targetIndex = token.attrIndex('target');
+  if (targetIndex < 0) {
+    token.attrPush(['target', '_blank']);
+  } else if (token.attrs) {
+    token.attrs[targetIndex][1] = '_blank';
+  }
+
+  const relIndex = token.attrIndex('rel');
+  if (relIndex < 0) {
+    token.attrPush(['rel', 'noopener noreferrer']);
+  } else if (token.attrs) {
+    token.attrs[relIndex][1] = 'noopener noreferrer';
+  }
+
+  return defaultLinkOpen(tokens, idx, options, env, self);
+};
+
 const resolveAboutMarkdown = (source: string) =>
   source.replace(
     /!\[([^\]]*)\]\(\.\/images\/([^)]+)\)/g,
     (_match, alt: string, fileName: string) =>
       `![${alt}](/images/${fileName})`,
   );
+
+const DETAILS_BLOCK_RE =
+  /<details>\s*<summary>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/gi;
+
+const renderAboutMarkdown = (source: string): string => {
+  const resolved = resolveAboutMarkdown(source);
+  const detailBlocks: string[] = [];
+  const withPlaceholders = resolved.replace(
+    DETAILS_BLOCK_RE,
+    (_match, summary: string, body: string) => {
+      const index = detailBlocks.length;
+      detailBlocks.push(
+        `<details><summary>${markdownIt.renderInline(summary.trim())}</summary>${markdownIt.render(body.trim())}</details>`,
+      );
+      return `\n\n@@@DETAILS${index}@@@\n\n`;
+    },
+  );
+
+  return markdownIt
+    .render(withPlaceholders)
+    .replace(/(?:<p>)?@@@DETAILS(\d+)@@@(?:<\/p>)?/g, (_match, index: string) => {
+      return detailBlocks[Number(index)] ?? '';
+    });
+};
+
 const aboutHtmlByLang = {
-  ja: markdownIt.render(resolveAboutMarkdown(aboutMarkdownJa)),
-  en: markdownIt.render(resolveAboutMarkdown(aboutMarkdownEn)),
+  ja: renderAboutMarkdown(aboutMarkdownJa),
+  en: renderAboutMarkdown(aboutMarkdownEn),
 } as const;
 
 const getAboutHtml = () =>

@@ -12,3 +12,6 @@
     - 言語モードが`JA`: [about.md](../docs/ja/about.md)の内容を`markdown-it`でレンダリングしたHTMLを埋め込む
     - 言語モードが`EN`: [about.md](../docs/en/about.md)の内容を`markdown-it`でレンダリングしたHTMLを埋め込む
       - サブディレクトリ[images](./images)に画像を追加していく想定なのでビルド後はdist/images/に画像ファイルがまとめられるようにしてください
+- 基本挙動
+  - リンクは別ウィンドウ／タブで開く`blank`ターゲットもしくは`window.opener()`経由で開くようにしてください。
+  - `<details></details>`タグによる折りたたみを利用可能にしてください

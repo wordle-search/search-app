@@ -273,6 +273,60 @@ button {
     "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
+.markdown-body details {
+  margin: 0 0 1rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  background: var(--control-bg);
+  overflow: hidden;
+}
+
+.markdown-body details + details {
+  margin-top: 0.75rem;
+}
+
+.markdown-body summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.85rem 1rem;
+  color: var(--page-fg);
+  font-weight: 700;
+  user-select: none;
+}
+
+.markdown-body summary::-webkit-details-marker {
+  display: none;
+}
+
+.markdown-body summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 1em;
+  margin-right: 0.35rem;
+  color: var(--accent);
+  transition: transform 160ms ease;
+}
+
+.markdown-body details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.markdown-body details > :not(summary) {
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+.markdown-body details > :last-child {
+  margin-bottom: 1rem;
+}
+
+.markdown-body ul {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  color: var(--muted-fg);
+  line-height: 1.7;
+}
+
 body.content-modal-open {
   overflow: hidden;
 }

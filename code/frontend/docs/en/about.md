@@ -9,6 +9,7 @@ This is the app's core feature.
 Use a regular expression (regex) to specify your search criteria and filter matching words.
 If you're unfamiliar with regex syntax, please refer to the reference sites below.
 - [RegexOne](https://www.regexone.com/?utm_source=chatgpt.com)
+
 ![RegEx search](./images/en-regex.png)
 
 </details>
@@ -16,6 +17,7 @@ If you're unfamiliar with regex syntax, please refer to the reference sites belo
 <details><summary>Wordle-like Search</summary>
 
 This mode allows you to create a regular expression (regex) using a Wordle-style touch keyboard and grid panel, then search for matching words.
+
 ![Wordle-like search](./images/en-wordle.png)
 In this help guide, the following terms are used:
 - Letter Grid

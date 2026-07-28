@@ -10,20 +10,22 @@ Use a regular expression (regex) to specify your search criteria and filter matc
 If you're unfamiliar with regex syntax, please refer to the reference sites below.
 - [RegexOne](https://www.regexone.com/?utm_source=chatgpt.com)
 
-![RegEx search](./images/en-regex.png)
-
+![RegEx search](../images/en-regex.png)
+- Enter a regular expression (regex) in the "Regular Expression" text box.
+- Words that match the entered regular expression are displayed in the "Results" list. The list updates automatically as you edit the expression.
+- Click "<i class="fa-regular fa-copy"></i> Copy" to copy a URL containing the current regular expression to the clipboard.
 </details>
 
 <details><summary>Wordle-like Search</summary>
 
 This mode allows you to create a regular expression (regex) using a Wordle-style touch keyboard and grid panel, then search for matching words.
 
-![Wordle-like search](./images/en-wordle.png)
+![Wordle-like search](../images/en-wordle.png)
 In this help guide, the following terms are used:
 - Letter Grid
 - Touch Keyboard
 
-![Woedle風検索の使い方](./images/en-keyboard.png)
+![Woedle風検索の使い方](../images/en-keyboard.png)
 - <i class="fa-solid fa-keyboard"></i>: Click to open the touch keyboard.
 - Touch keyboards:
   - <i class="fa-solid fa-delete-left"></i>: Click to delete the previous character.

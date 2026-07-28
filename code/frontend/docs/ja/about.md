@@ -12,24 +12,28 @@
 
 - [とほほの正規検索](https://www.tohoho-web.com/ex/regexp.html)
 
-![正規表現検索](./images/ja-regex.png)
+![正規表現検索](../images/ja-regex.png)
+
+- 「正規表現」のテキストボックスに半角文字でパターンを入力します。
+- 入力した正規表現に一致する単語が「候補」に表示されていきます。入力内容が更新されると自動的に更新されます。
+- 「<i class="fa-regular fa-copy"></i>Copy」をクリックすると正規表現付きのURLとしてクリップボードにコピーすることができます
 
 </details>
 
 <details><summary>Wordle風検索</summary>
 
-正規表現の検索パターンをWordle風のUI（タッチキーボードとグリッドパネル）を使って構成して検索できるモードです。
-![Wordle風検索](./images/ja-wordle.png)
+正規表現の検索パターンをWordle風のUI（タッチキーボードと文字グリッド）を使って構成して検索できるモードです。
+![Wordle風検索](../images/ja-wordle.png)
 それぞれの部分を以下のような名称となります。
 - 文字グリッド（画面中央／左）
 - タッチキーボード（画面右）
 
 #### 使い方
-![Woedle風検索の使い方](./images/ja-keyboard.png)
+![Woedle風検索の使い方](../images/ja-keyboard.png)
 - キーボードアイコン<i class="fa-solid fa-trash"></i>をクリックしてタッチキーボードを展開します。タッチキーボードを展開しなくても
   キーボード入力（アルファベット／BackSpace）には反応します。
 - キーボード／タッチキーボードで文字を入力し、文字グリッドに入力された文字をクリックすることで「🟩（正解）」→「🟨（位置違い）」→「⬜️（含まれない）」 の順で変更できます。
-- タッチキーボードの「<i class="fa-solid fa-delete-left"></i>」または`BackSpace`をクリックすると直前の文字を削除できます。
+- タッチキーボードの「<i class="fa-solid fa-delete-left"></i>」をクリックするかキーボードで`BackSpace`を押すと直前の文字を削除できます。
 - タッチキーボードの「<i class="fa-solid fa-trash"></i>」をクリックすると入力中の行を削除できます。
 - 「クリア」をクリックすると入力内容をすべて削除できます。
 
